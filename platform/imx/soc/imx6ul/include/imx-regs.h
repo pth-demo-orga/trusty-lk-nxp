@@ -1,0 +1,12 @@
+
+#ifndef _IMX_REGS_H_
+#define _IMX_REGS_H_
+
+#define GIC_BASE_PHY 0xa01000
+#define GIC_BASE_VIRT 0x70a01000
+
+#define SOC_REGS_PHY  0x02000000
+#define SOC_REGS_VIRT 0x72000000
+#define SOC_REGS_SIZE 0x00100000
+
+#endif
