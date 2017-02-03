@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015, Google, Inc. All rights reserved
+# Copyright (c) 2017, Google, Inc. All rights reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files
@@ -40,6 +40,14 @@ MODULE_SRCS += \
 	$(LOCAL_DIR)/debug.c \
 	$(LOCAL_DIR)/platform.c \
 	$(LOCAL_DIR)/drivers/imx_uart.c \
+
+ifeq (true,$(call TOBOOL,$(WITH_TZASC)))
+MODULE_SRCS += \
+	$(LOCAL_DIR)/tzasc.c
+
+GLOBAL_DEFINES += \
+	WITH_TZASC=1
+endif
 
 MODULE_DEPS += \
 	dev/interrupt/arm_gic \

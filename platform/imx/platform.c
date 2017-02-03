@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Google Inc. All rights reserved
+ * Copyright (c) 2017 Google Inc. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -28,6 +28,10 @@
 #include <kernel/vm.h>
 #include <lk/init.h>
 #include <string.h>
+#ifdef WITH_TZASC
+#include <platform/tzasc.h>
+#include <tzasc_regions.h>
+#endif
 
 
 #define ARM_GENERIC_TIMER_INT_CNTV 27
@@ -118,6 +122,15 @@ static void platform_after_vm_init(uint level)
 
 	/* Map for all SoC IPs. */
 	generic_arm64_map_regs("soc", SOC_REGS_VIRT, SOC_REGS_PHY, SOC_REGS_SIZE);
+
+#ifdef WITH_TZASC
+	/* Initialize TZASC. */
+	generic_arm64_map_regs("tzasc", TZ_BASE_VIRT, TZ_BASE, TZ_REG_SIZE);
+	if (initial_tzasc(tzasc_regions) != 0)
+		dprintf(CRITICAL, "TZASC init error!\n");
+	else
+		dprintf(CRITICAL, "TZASC inited.\n");
+#endif
 
 }
 

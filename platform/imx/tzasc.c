@@ -26,36 +26,51 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _IMX_REGS_H_
-#define _IMX_REGS_H_
+#include <platform/tzasc.h>
 
-#define GIC_BASE_PHY 0xa01000
-#define GIC_BASE_VIRT 0x70a01000
+int check_region_table_end(tzasc_region_t *region) {
 
-#define SOC_REGS_PHY  0x02000000
-#define SOC_REGS_VIRT 0x72000000
-#define SOC_REGS_SIZE 0x00100000
+	if ((region->addr_l | region->addr_h | region->attr) == 0)
+		return 1;
 
-/* Registers for GIC */
-#define MAX_INT 160
-#define GICBASE(b) (GIC_BASE_VIRT)
+	return 0;
+}
 
-#define GICC_SIZE (0x1000)
-#define GICD_SIZE (0x100)
+int write_tzasc_region(tzasc_region_t *region, int region_num) {
 
-#define GICC_OFFSET (0x1000)
-#define GICD_OFFSET (0x0000)
+	if (region != NULL) {
+		TZ_REG(TZ_GET_REGION_ADDR(region_num)) = region->addr_l;
+		TZ_REG(TZ_GET_REGION_ADDR(region_num) + 0x4) = region->addr_h;
+		TZ_REG(TZ_GET_REGION_ADDR(region_num) + 0x8) = region->attr;
+	} else {
+		return -1;
+	}
 
-#define GICC_BASE_VIRT (GIC_BASE_VIRT + GICC_OFFSET)
-#define GICD_BASE_VIRT (GIC_BASE_VIRT + GICD_OFFSET)
+    return 0;
+}
 
-#define GIC_REG_SIZE 0x2000
+int initial_tzasc(tzasc_region_t* regions) {
 
-/* Registers for TZASC */
-#define TZ_BASE ((0x02100000 + 0x80000) + 0x50000)
-#define TZ_BASE_VIRT (0x70000000 + TZ_BASE)
-#define TZ_REG_SIZE 0x4000
-#define TZ_BYPASS_GPR_BASE 0x20E4024
-#define TZ_BYPASS_GPR_BASE_VIRT (0x70000000 + TZ_BYPASS_GPR_BASE)
+	int ret = 0;
+	/*
+	 * ACTION field 0x2 means
+	 * sets tzasc_int HIGH and issues an OKAY response
+	 */
+	TZ_REG(TZ_ACTION) = 0x2;
 
-#endif
+	//From number 0 region to config.
+	int region_num = 0;
+	while(!(check_region_table_end(regions))) {
+		if (write_tzasc_region(regions, region_num)) {
+			ret = -1;
+			goto out;
+		}
+		region_num++;
+		regions++;
+	}
+
+	TZ_REG(TZ_INT_CLEAR) = 0;
+
+out:
+	return ret;
+}

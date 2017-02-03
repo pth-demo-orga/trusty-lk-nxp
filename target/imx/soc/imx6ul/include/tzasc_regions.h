@@ -26,36 +26,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _IMX_REGS_H_
-#define _IMX_REGS_H_
+#ifndef _TZASC_REGIONS_H_
+#define _TZASC_REGIONS_H_
 
-#define GIC_BASE_PHY 0xa01000
-#define GIC_BASE_VIRT 0x70a01000
+#include <platform/tzasc.h>
 
-#define SOC_REGS_PHY  0x02000000
-#define SOC_REGS_VIRT 0x72000000
-#define SOC_REGS_SIZE 0x00100000
+tzasc_region_t tzasc_regions[] = {
+	{
+	.addr_l = 0,
+	.addr_h = 0,
+	.attr = TZ_ATTR(TZ_ATTR_SP_ALL,
+		TZ_ATTR_DISABLE_REGION,
+		TZ_ATTR_REGION_SIZE(TZ_REGION_SIZE_4G),
+		TZ_REGION_ENABLE)
+	},
 
-/* Registers for GIC */
-#define MAX_INT 160
-#define GICBASE(b) (GIC_BASE_VIRT)
+	{
+	.addr_l = 0x80000000,
+	.addr_h = 0,
+	.attr = TZ_ATTR(TZ_ATTR_SP_ALL,
+		TZ_ATTR_DISABLE_REGION,
+		TZ_ATTR_REGION_SIZE(TZ_REGION_SIZE_512M),
+		TZ_REGION_ENABLE)
+	},
 
-#define GICC_SIZE (0x1000)
-#define GICD_SIZE (0x100)
+	{
+	.addr_l = MEMBASE,
+	.addr_h = 0x0,
+	.attr = TZ_ATTR(TZ_ATTR_SP_S_WR_ONLR,
+		TZ_ATTR_DISABLE_REGION,
+		TZ_ATTR_REGION_SIZE(TZ_REGION_SIZE_32M),
+		TZ_REGION_ENABLE)
+	},
 
-#define GICC_OFFSET (0x1000)
-#define GICD_OFFSET (0x0000)
+	{0}
+};
 
-#define GICC_BASE_VIRT (GIC_BASE_VIRT + GICC_OFFSET)
-#define GICD_BASE_VIRT (GIC_BASE_VIRT + GICD_OFFSET)
-
-#define GIC_REG_SIZE 0x2000
-
-/* Registers for TZASC */
-#define TZ_BASE ((0x02100000 + 0x80000) + 0x50000)
-#define TZ_BASE_VIRT (0x70000000 + TZ_BASE)
-#define TZ_REG_SIZE 0x4000
-#define TZ_BYPASS_GPR_BASE 0x20E4024
-#define TZ_BYPASS_GPR_BASE_VIRT (0x70000000 + TZ_BYPASS_GPR_BASE)
 
 #endif
