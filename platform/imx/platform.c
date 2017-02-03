@@ -27,7 +27,6 @@
 #include <dev/timer/arm_generic.h>
 #include <kernel/vm.h>
 #include <lk/init.h>
-#include <platform/gic.h>
 #include <string.h>
 
 

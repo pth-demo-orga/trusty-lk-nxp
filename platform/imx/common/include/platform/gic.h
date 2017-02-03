@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Google Inc. All rights reserved
+ * Copyright (c) 2017 Google Inc. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -24,18 +24,6 @@
 #define __PLATFORM_GIC_H
 #include <imx-regs.h>
 
-#define MAX_INT 160
-#define GICBASE(b) (GIC_BASE_VIRT)
-
-#define GICC_SIZE (0x1000)
-#define GICD_SIZE (0x100)
-
-#define GICC_OFFSET (0x1000)
-#define GICD_OFFSET (0x0000)
-
-#define GICC_BASE_VIRT (GIC_BASE_VIRT + GICC_OFFSET)
-#define GICD_BASE_VIRT (GIC_BASE_VIRT + GICD_OFFSET)
-
-#define GIC_REG_SIZE 0x2000
+/* Registers definition moved to soc folder */
 
 #endif

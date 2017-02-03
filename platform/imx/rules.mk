@@ -34,8 +34,7 @@ WITH_LIB_VERSION := 1
 MEMBASE ?= $(KERNEL_BASE)
 
 GLOBAL_INCLUDES += \
-	$(LOCAL_DIR)/include \
-	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include
+	$(LOCAL_DIR)/common/include \
 
 MODULE_SRCS += \
 	$(LOCAL_DIR)/debug.c \
