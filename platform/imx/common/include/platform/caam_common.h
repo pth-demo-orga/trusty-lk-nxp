@@ -26,47 +26,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _IMX_REGS_H_
-#define _IMX_REGS_H_
+#ifndef _CAAM_COMMON_H_
+#define _CAAM_COMMON_H_
 
-#define GIC_BASE_PHY 0xa01000
-#define GIC_BASE_VIRT 0x70a01000
+#define SYSCALL_PLATFORM_FD_CAAM	0x8 //Maxium 0xA
+#define CAAM_RNG_MAX_LEN		256
+#define CAAM_KEY_MAX_LEN		256
 
-#define SOC_REGS_PHY  0x02000000
-#define SOC_REGS_VIRT 0x72000000
-#define SOC_REGS_SIZE 0x00400000
+#define CAAM_KB_MISC_LEN		48
 
-#define CAAM_PHY_BASE_ADDR 0x02140000
-#define CAAM_BASE_ADDR  (0x70000000 + CAAM_PHY_BASE_ADDR)
-#define CAAM_PHY_ARB_BASE_ADDR 0x00100000
-#define CAAM_ARB_BASE_ADDR (0x70000000 + 0x00100000)
+#define CAAM_IOCMD_STATUS		0x00000001
+#define CAAM_IOCMD_RNG			0x00000002
+#define CAAM_IOCMD_KEY			0x00000004
+#define CAAM_IOCMD_GENKB		0x00000008
+#define CAAM_IOCMD_DEKB			0x00000010
 
-#define CAAM_REG_SIZE 0x3C000
+#define CAAM_OK				0x0
+#define CAAM_NOT_OPEN			0x1
+#define CAAM_INTERNAL_ERROR		0x2
 
-#define CCM_BASE_ADDR (0x02000000 + 0x80000 + 0x44000)
-#define CCM_BASE_ADDR_VIRT (0x70000000 + CCM_BASE_ADDR)
-#define CAAM_SEC_RAM_SIZE 0x8000
+struct rng_msg {
+	uint8_t *data;
+	size_t len; 
+};
 
-/* Registers for GIC */
-#define MAX_INT 160
-#define GICBASE(b) (GIC_BASE_VIRT)
+struct key_msg {
+	uint8_t *src;
+	uint8_t *dst;
+	uint32_t len;
+};
 
-#define GICC_SIZE (0x1000)
-#define GICD_SIZE (0x100)
-
-#define GICC_OFFSET (0x1000)
-#define GICD_OFFSET (0x0000)
-
-#define GICC_BASE_VIRT (GIC_BASE_VIRT + GICC_OFFSET)
-#define GICD_BASE_VIRT (GIC_BASE_VIRT + GICD_OFFSET)
-
-#define GIC_REG_SIZE 0x2000
-
-/* Registers for TZASC */
-#define TZ_BASE ((0x02100000 + 0x80000) + 0x50000)
-#define TZ_BASE_VIRT (0x70000000 + TZ_BASE)
-#define TZ_REG_SIZE 0x4000
-#define TZ_BYPASS_GPR_BASE 0x20E4024
-#define TZ_BYPASS_GPR_BASE_VIRT (0x70000000 + TZ_BYPASS_GPR_BASE)
+struct keyblob_msg {
+	uint8_t *plain_text;
+	uint8_t *blob;
+	uint32_t plain_len;
+};
 
 #endif

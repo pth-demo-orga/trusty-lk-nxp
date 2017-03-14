@@ -131,6 +131,7 @@ static void platform_after_vm_init(uint level)
 	else
 		dprintf(CRITICAL, "TZASC inited.\n");
 #endif
+	generic_arm64_map_regs("caam", CAAM_ARB_BASE_ADDR, CAAM_PHY_ARB_BASE_ADDR, CAAM_REG_SIZE + CAAM_SEC_RAM_SIZE);
 
 }
 
