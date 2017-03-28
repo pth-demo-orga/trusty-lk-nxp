@@ -42,6 +42,7 @@ uint32_t caam_decap_blob(uint8_t *plain_text, uint8_t *blob_addr, uint32_t size)
 uint32_t caam_aes_enc(uint8_t *input, uint8_t *output_ptr, uint32_t len_input);
 uint32_t caam_aes_dec(uint8_t *input, uint8_t *output_ptr, uint32_t len_input);
 uint32_t caam_hwrng(uint8_t *output_ptr, uint32_t output_len);
+void install_aeskey(uint8_t *key);
 void caam_test(void);
 
 struct mxc_ccm_reg {

@@ -40,6 +40,7 @@ MODULE_SRCS += \
 	$(LOCAL_DIR)/caam_dev.c \
 	$(LOCAL_DIR)/debug.c \
 	$(LOCAL_DIR)/platform.c \
+	$(LOCAL_DIR)/keyslots.c \
 	$(LOCAL_DIR)/drivers/imx_uart.c \
 	$(LOCAL_DIR)/drivers/caam.c \
 
@@ -53,7 +54,8 @@ endif
 
 MODULE_DEPS += \
 	dev/interrupt/arm_gic \
-	dev/timer/arm_generic
+	dev/timer/arm_generic \
+	openssl
 
 GLOBAL_DEFINES += \
 	MEMBASE=$(MEMBASE) \

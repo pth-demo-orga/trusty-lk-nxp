@@ -26,51 +26,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _IMX_REGS_H_
-#define _IMX_REGS_H_
+#ifndef _HWKEY_KEYSLOTS_H_
+#define _HWKEY_KEYSLOTS_H_
 
-#define GIC_BASE_PHY 0xa01000
-#define GIC_BASE_VIRT 0x70a01000
+#include <platform/hwkey_keyslots_common.h>
 
-#define SOC_REGS_PHY  0x02000000
-#define SOC_REGS_VIRT 0x72000000
-#define SOC_REGS_SIZE 0x00400000
+#define KEYSLOT_NUM      10
 
-#define CAAM_PHY_BASE_ADDR 0x02140000
-#define CAAM_BASE_ADDR  (0x70000000 + CAAM_PHY_BASE_ADDR)
-#define CAAM_PHY_ARB_BASE_ADDR 0x00100000
-#define CAAM_ARB_BASE_ADDR (0x70000000 + 0x00100000)
+struct hwkey_keyslot_t
+{
+	char* slot_id;
+	unsigned char key[KEYSLOT_KEY_LEN];
+	uint32_t keylen;
+};
 
-#define CAAM_REG_SIZE 0x3C000
+struct keyslot_package
+{
+	char magic[4];
+	unsigned int rpmb_keyblob_len;
+	unsigned char rpmb_keyblob[RPMBKEY_LEN];
+	unsigned int pubkey_keyblob_len;
+	unsigned char pubkey_keyblob[PUBKEY_LEN];
+};
 
-#define CCM_BASE_ADDR (0x02000000 + 0x80000 + 0x44000)
-#define CCM_BASE_ADDR_VIRT (0x70000000 + CCM_BASE_ADDR)
-#define CAAM_SEC_RAM_SIZE 0x8000
-
-/* Registers for GIC */
-#define MAX_INT 160
-#define GICBASE(b) (GIC_BASE_VIRT)
-
-#define GICC_SIZE (0x1000)
-#define GICD_SIZE (0x100)
-
-#define GICC_OFFSET (0x1000)
-#define GICD_OFFSET (0x0000)
-
-#define GICC_BASE_VIRT (GIC_BASE_VIRT + GICC_OFFSET)
-#define GICD_BASE_VIRT (GIC_BASE_VIRT + GICD_OFFSET)
-
-#define GIC_REG_SIZE 0x2000
-
-/* Registers for TZASC */
-#define TZ_BASE ((0x02100000 + 0x80000) + 0x50000)
-#define TZ_BASE_VIRT (0x70000000 + TZ_BASE)
-#define TZ_REG_SIZE 0x4000
-#define TZ_BYPASS_GPR_BASE 0x20E4024
-#define TZ_BYPASS_GPR_BASE_VIRT (0x70000000 + TZ_BYPASS_GPR_BASE)
-
-#define SECURE_RAM_START_ADDR_PHY 0x00100000
-#define SECURE_RAM_START_ADDR (SECURE_RAM_START_ADDR_PHY + 0x70000000)
-#define SECURE_RAM_SIZE 0x4000
+int get_key_from_slot(char *slot_id, unsigned char* key, uint32_t * key_len);
 
 #endif

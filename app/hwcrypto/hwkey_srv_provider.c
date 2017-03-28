@@ -30,6 +30,7 @@
 #include <openssl/err.h>
 #include <openssl/hkdf.h>
 #include <platform/caam_common.h>
+#include <platform/hwkey_keyslots_common.h>
 
 #include "common.h"
 #include "uuids.h"
@@ -77,8 +78,21 @@ static const uuid_t ss_uuid = SECURE_STORAGE_SERVER_APP_UUID;
 static uint32_t get_rpmb_ss_auth_key(const struct hwkey_keyslot *slot,
 				     uint8_t *kbuf, size_t kbuf_len, size_t *klen)
 {
-	//TODO import RPMB keyblob from bootloader which store in secure RAM.
-	return HWKEY_ERR_NOT_IMPLEMENTED;
+	struct keyslot_parameter_t rpmb_slot;
+	rpmb_slot.slot_id_len = strlen(RPMB_SS_AUTH_KEY_ID);
+	status_t stat;
+	rpmb_slot.status = &stat;
+
+	rpmb_slot.key_len = klen;
+	strcpy(rpmb_slot.slot_id, RPMB_SS_AUTH_KEY_ID);
+	ioctl(SYSCALL_PLATFORM_FD_KEYSLOTS, KEYSLOT_IOCTL_GET, &rpmb_slot);
+
+	if (*rpmb_slot.status == HWKEY_NO_ERROR) {
+		memcpy(kbuf, rpmb_slot.key, *klen);
+		return HWKEY_NO_ERROR;
+	} else {
+		return HWKEY_ERR_GENERIC;
+	}
 }
 
 /*

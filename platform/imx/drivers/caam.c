@@ -32,6 +32,8 @@
 #include <reg.h>
 #include <stdio.h>
 #include <string.h>
+#include <openssl/hkdf.h>
+#include <openssl/digest.h>
 
 #include "fsl_caam_internal.h"
 
@@ -88,6 +90,25 @@ static uint8_t skeymod[] = {
 	0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
 	0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
 };
+
+static int aeskey_installed = 0;
+static uint8_t aeskey[] = {
+	0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
+	0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
+};
+
+static const uint8_t aeskey_salt[] = {
+	0x40, 0xf0, 0xbb, 0x3d, 0x70, 0x57, 0x7b, 0xb5,
+	0x53, 0xf2, 0x4d, 0x7d, 0x11, 0xd3, 0x59, 0xb6
+};
+
+/* caller need to confirm key length */
+void install_aeskey(uint8_t *key) {
+	if (aeskey_installed == 1)
+		return;
+	HKDF(aeskey, 16, EVP_sha256(), key, 16, aeskey_salt, 16, "AESKEY", 6);
+	aeskey_installed = 1;
+}
 
 void caam_open(void) {
 	uint32_t temp_reg;
@@ -271,15 +292,13 @@ uint32_t caam_aes_dec(uint8_t *input, uint8_t *output_ptr, uint32_t len_input) {
 	memset(output,0,len_input);
 
 	/*
-	 * TODO:
-	 * Now AES key use skeymod.
-	 * Will replace this one by the RPMB key
-	 * which injected by bootloader.
+	 * Now AES key use aeskey.
+	 * aeskey is derived from the first 16 bytes of RPMB key.
 	 */
 	int n = 0;
 	keygen_dsc[n++] = (uint32_t)0xb0800008;
 	keygen_dsc[n++] = (uint32_t)0x02000010;
-	keygen_dsc[n++] = (uint32_t)skeymod;
+	keygen_dsc[n++] = (uint32_t)aeskey;
 	keygen_dsc[n++] = (uint32_t)0x8210020C;
 	keygen_dsc[n++] = (uint32_t)0x22120000 | (0x0000ffff & len_input);
 	keygen_dsc[n++] = (uint32_t)input;
@@ -324,15 +343,13 @@ uint32_t caam_aes_enc(uint8_t *input, uint8_t *output_ptr, uint32_t len_input) {
 	memset(output,0,len_input);
 
 	/*
-	 * TODO:
-	 * Now AES key use skeymod.
-	 * Will replace this one by the RPMB key
-	 * which injected by bootloader.
+	 * Now AES key use aeskey.
+	 * aeskey is derived from the first 16 bytes of RPMB key.
 	 */
 	int n = 0;
 	keygen_dsc[n++] = (uint32_t)0xb0800008;
 	keygen_dsc[n++] = (uint32_t)0x02000010;
-	keygen_dsc[n++] = (uint32_t)skeymod;
+	keygen_dsc[n++] = (uint32_t)aeskey;
 	keygen_dsc[n++] = (uint32_t)0x8210020D;
 	keygen_dsc[n++] = (uint32_t)0x22120000 | (0x0000ffff & len_input);
 	keygen_dsc[n++] = (uint32_t)input;
