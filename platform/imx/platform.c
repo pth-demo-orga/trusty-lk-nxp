@@ -60,6 +60,13 @@ struct mmu_initial_mapping mmu_initial_mappings[] = {
 		.flags = MMU_INITIAL_MAPPING_FLAG_DEVICE,
 		.name = "uart"
 	},
+	{
+		.phys = GIC_BASE_PHY,
+		.virt = GIC_BASE_VIRT,
+		.size = GIC_REG_SIZE,
+		.flags = MMU_INITIAL_MAPPING_FLAG_DEVICE,
+		.name = "gic"
+	},
 	/* null entry to terminate the list */
 	{ 0 }
 };
