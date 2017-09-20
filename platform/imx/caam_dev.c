@@ -94,8 +94,8 @@ static int32_t caam_blob(int32_t cmd, user_addr_t user_addr) {
 		!valid_address((vaddr_t) msg->blob, msg->plain_len + CAAM_KB_HEADER_LEN))
 		return ERR_INVALID_ARGS;
 
-	uint32_t phy_plain_text = kvaddr_to_paddr(msg->plain_text);
-	uint32_t phy_blob = kvaddr_to_paddr(msg->blob);
+	uint32_t phy_plain_text = vaddr_to_paddr(msg->plain_text);
+	uint32_t phy_blob = vaddr_to_paddr(msg->blob);
 	uint32_t ret;
 
 	if (cmd == CAAM_IOCMD_GENKB)

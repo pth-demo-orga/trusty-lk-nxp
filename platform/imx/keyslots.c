@@ -144,8 +144,8 @@ static void keyslots_init(uint level)
 	}
 	memcpy(keyblob_buf, sec_ram_p->rpmb_keyblob, sec_ram_p->rpmb_keyblob_len);
 	caam_open();
-	ret = caam_decap_blob(kvaddr_to_paddr(keyslots[KEYSLOT_IDX_RPMB].key),
-		kvaddr_to_paddr(keyblob_buf), sec_ram_p->rpmb_keyblob_len - KEYBLOB_LEN);
+	ret = caam_decap_blob(vaddr_to_paddr(keyslots[KEYSLOT_IDX_RPMB].key),
+		vaddr_to_paddr(keyblob_buf), sec_ram_p->rpmb_keyblob_len - KEYBLOB_LEN);
 
 	if (ret != CAAM_SUCCESS) {
 		LTRACEF_LEVEL(0, "keyslots_init rpmb_key init failed\n");

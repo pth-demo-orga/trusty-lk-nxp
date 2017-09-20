@@ -115,4 +115,6 @@ int uart_putc(int port, char c )
 	/* wait until sent */
 	while (!(READ32(UART_BASE + UTS) & UTS_TXEMPTY))
 		;
+
+	return 0;
 }
