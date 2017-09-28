@@ -33,7 +33,7 @@
 #include <kernel/vm.h>
 #include <kernel/mutex.h>
 #include <err.h>
-#include <mm.h>
+#include <uapi/mm.h>
 #include <imx-regs.h>
 #include <lk/init.h>
 #include <platform/caam.h>

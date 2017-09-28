@@ -32,7 +32,7 @@
 #include <kernel/vm.h>
 #include <lib/trusty/sys_fd.h>
 #include <lk/init.h>
-#include <mm.h>
+#include <uapi/mm.h>
 #include <platform/caam.h>
 #include <platform/caam_common.h>
 #include <stdio.h>
