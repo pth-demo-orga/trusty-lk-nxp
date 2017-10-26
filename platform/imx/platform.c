@@ -54,18 +54,11 @@ struct mmu_initial_mapping mmu_initial_mappings[] = {
 		.flags = MMU_INITIAL_MAPPING_FLAG_DYNAMIC,
 		.name = "ram" },
 	{
-		.phys = CONFIG_CONSOLE_TTY_BASE,
-		.virt = CONFIG_CONSOLE_TTY_BASE,
-		.size = 0x4000,
+		.phys = SOC_REGS_PHY,
+		.virt = SOC_REGS_VIRT,
+		.size = SOC_REGS_SIZE,
 		.flags = MMU_INITIAL_MAPPING_FLAG_DEVICE,
-		.name = "uart"
-	},
-	{
-		.phys = GIC_BASE_PHY,
-		.virt = GIC_BASE_VIRT,
-		.size = GIC_REG_SIZE,
-		.flags = MMU_INITIAL_MAPPING_FLAG_DEVICE,
-		.name = "gic"
+		.name = "soc"
 	},
 	/* null entry to terminate the list */
 	{ 0 }
@@ -120,19 +113,17 @@ static void platform_after_vm_init(uint level)
 {
 	generic_arm64_map_regs("gic", GIC_BASE_VIRT, GIC_BASE_PHY, GIC_REG_SIZE);
 
-
 	/* Initialize the interrupt controller. */
 	arm_gic_init();
 
 	/* Initialize the timer block. */
 	arm_generic_timer_init(ARM_GENERIC_TIMER_INT, 0);
 
-	/* Map for all SoC IPs. */
-	generic_arm64_map_regs("soc", SOC_REGS_VIRT, SOC_REGS_PHY, SOC_REGS_SIZE);
+	/* SOC is mapped in initial mapping */
 
 #ifdef WITH_TZASC
 	/* Initialize TZASC. */
-	generic_arm64_map_regs("tzasc", TZ_BASE_VIRT, TZ_BASE, TZ_REG_SIZE);
+	/* TZASC registers are mapped by initial mapping */
 	if (initial_tzasc(tzasc_regions) != 0)
 		dprintf(CRITICAL, "TZASC init error!\n");
 	else

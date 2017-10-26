@@ -28,6 +28,7 @@
 #include <debug.h>
 #include <reg.h>
 #include <dev/uart.h>
+#include <imx-regs.h>
 
 #define READ32(addr)		(*REG32(addr))
 #define WRITE32(val, addr)	(READ32(addr) = val)
@@ -79,7 +80,7 @@
 #define  UTS_TXFULL	(1<<4)  /* TxFIFO full */
 #define  UTS_RXFULL	(1<<3)  /* RxFIFO full */
 #define  UTS_SOFTRST	(1<<0)  /* Software reset */
-#define  UART_BASE	CONFIG_CONSOLE_TTY_BASE
+#define  UART_BASE	(SOC_REGS_VIRT + (CONFIG_CONSOLE_TTY_BASE - SOC_REGS_PHY))
 
 void uart_init(void)
 {
