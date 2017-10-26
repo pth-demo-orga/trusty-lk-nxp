@@ -35,6 +35,7 @@ MEMBASE ?= $(KERNEL_BASE)
 
 GLOBAL_INCLUDES += \
 	$(LOCAL_DIR)/common/include \
+	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include \
 
 MODULE_SRCS += \
 	$(LOCAL_DIR)/caam_dev.c \

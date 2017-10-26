@@ -21,12 +21,5 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-LOCAL_DIR := $(GET_LOCAL_DIR)
-
-GLOBAL_INCLUDES += \
-	$(LOCAL_DIR)/include \
-	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include
-
 PLATFORM := imx
 
-#include make/module.mk
