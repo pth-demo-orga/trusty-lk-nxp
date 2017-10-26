@@ -21,55 +21,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-LOCAL_DIR := $(GET_LOCAL_DIR)
+PLATFORM := imx
+PLATFORM_SOC := imx6ul
 
-MODULE := $(LOCAL_DIR)
-
-ARCH := arm
-ARM_CPU := cortex-a7
-WITH_LIB_SM := 1
-WITH_LIB_SM_MONITOR := 1
-WITH_LIB_VERSION := 1
-
-# TEE memory phys address and size
-MEMBASE ?= 0x9e000000
-MEMSIZE ?= 0x02000000
-
-# TEE kernel virt address
-KERNEL_BASE ?= $(MEMBASE)
-
-GLOBAL_INCLUDES += \
-	$(LOCAL_DIR)/common/include \
-	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include \
-
-MODULE_SRCS += \
-	$(LOCAL_DIR)/caam_dev.c \
-	$(LOCAL_DIR)/debug.c \
-	$(LOCAL_DIR)/platform.c \
-	$(LOCAL_DIR)/keyslots.c \
-	$(LOCAL_DIR)/drivers/imx_uart.c \
-	$(LOCAL_DIR)/drivers/caam.c \
-
-ifeq (true,$(call TOBOOL,$(WITH_TZASC)))
-MODULE_SRCS += \
-	$(LOCAL_DIR)/tzasc.c
-
-GLOBAL_DEFINES += \
-	WITH_TZASC=1
-endif
-
-MODULE_DEPS += \
-	dev/interrupt/arm_gic \
-	dev/timer/arm_generic \
-	openssl
-
-GLOBAL_DEFINES += \
-	CONFIG_CONSOLE_TTY_BASE=$(CONFIG_CONSOLE_TTY_BASE) \
-	MEMBASE=$(MEMBASE) \
-	MEMSIZE=$(MEMSIZE) \
-	MMU_WITH_TRAMPOLINE=1
-
-LINKER_SCRIPT += \
-	$(BUILDDIR)/system-onesegment.ld
-
-include make/module.mk
+CONFIG_CONSOLE_TTY_BASE := 0x021fc000
