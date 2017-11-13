@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Google Inc. All rights reserved
+ * Copyright (c) 2017 Google Inc. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -33,5 +33,10 @@ void platform_dputc(char c)
 
 int platform_dgetc(char *c, bool wait)
 {
-	return uart_getc(0, wait);
+	int res = -1;
+
+	if (wait)
+		thread_sleep(100);
+
+	return res;
 }
