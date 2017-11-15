@@ -58,7 +58,18 @@ enum hwkey_err {
 	do { if(x!=DRIVER_FD) return ERR_BAD_HANDLE; } while (0)
 
 static bool valid_address(vaddr_t addr, u_int size) {
-	return uthread_is_valid_range(uthread_get_current(), addr, size);
+       size = ROUNDUP(size + (addr & (PAGE_SIZE - 1)), PAGE_SIZE);
+       addr = ROUNDDOWN(addr, PAGE_SIZE);
+
+       while (size) {
+               if (!is_user_address(addr) || !vaddr_to_paddr((void*)addr)) {
+                       return false;
+               }
+               addr += PAGE_SIZE;
+               size -= PAGE_SIZE;
+       }
+
+       return true;
 }
 
 struct hwkey_keyslot_t keyslots[10] = {
