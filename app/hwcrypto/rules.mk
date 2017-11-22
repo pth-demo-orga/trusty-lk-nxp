@@ -26,6 +26,7 @@ MODULE_SRCS := \
 	$(LOCAL_DIR)/hwkey_srv.c \
 	$(LOCAL_DIR)/hwkey_srv_provider.c \
 	$(LOCAL_DIR)/hwrng_srv_provider.c \
+	$(LOCAL_DIR)/caam.c \
 
 MODULE_DEPS := \
 	app/trusty \

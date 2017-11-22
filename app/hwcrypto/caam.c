@@ -1,0 +1,604 @@
+/*
+ * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ * Copyright 2017 NXP
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <assert.h>
+#include <err.h>
+#include <err_ptr.h>
+#include <malloc.h>
+#include <openssl/hkdf.h>
+#include <openssl/digest.h>
+#include <reg.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <trusty_std.h>
+#include <uapi/mm.h>
+
+#define LOCAL_TRACE  1
+#define LOG_TAG      "caam"
+
+#include "caam.h"
+#include "common.h"
+#include <imx-regs.h>
+#include "fsl_caam_internal.h"
+
+struct caam_job_rings {
+    uint32_t in[1];  /* single entry input ring */
+    uint32_t out[2]; /* single entry output ring (consists of two words) */
+};
+
+
+/*
+ * According to CAAM docs max number of descriptors in single sequence is 64
+ * You can chain them though
+ */
+#define MAX_DSC_NUM   64
+
+struct caam_job {
+    uint32_t dsc[MAX_DSC_NUM];  /* job descriptors */
+    uint32_t dsc_used;          /* number of filled entries */
+    uint32_t status;            /* job result */
+};
+
+static struct caam_job_rings *g_rings;
+static struct caam_job *g_job;
+
+const uint32_t rng_inst_dsc[] = {
+    RNG_INST_DESC1,
+    RNG_INST_DESC2,
+    RNG_INST_DESC3,
+    RNG_INST_DESC4,
+    RNG_INST_DESC5,
+    RNG_INST_DESC6,
+    RNG_INST_DESC7,
+    RNG_INST_DESC8,
+    RNG_INST_DESC9
+};
+
+static void caam_test(void);
+
+static void caam_clk_get(void)
+{
+    uint32_t val;
+
+    /* make sure clock is on */
+    val = readl(ccm_base + CCM_CAAM_CCGR_OFFSET);
+#if defined(MACH_IMX6)
+    val |= (3 << 8) | (3 < 10) | (3 << 12);
+#elif defined(MACH_IMX7)
+    val  = (3 << 0); /* Always enabled (for now) */
+#else
+#error Unsupported IMX architecture
+#endif
+    writel(val, ccm_base + CCM_CAAM_CCGR_OFFSET);
+}
+
+static void setup_job_rings(void)
+{
+    int rc;
+    struct dma_pmem pmem;
+
+    /* Initialize job ring addresses */
+    memset(g_rings, 0, sizeof(*g_rings));
+    rc = prepare_dma(g_rings, sizeof(g_rings), DMA_FLAG_TO_DEVICE, &pmem);
+    if (rc != 1) {
+        TLOGE("prepare_dma failed: %d\n", rc);
+        abort();
+    }
+
+    writel((uint32_t)pmem.paddr + __offsetof(struct caam_job_rings, in),  CAAM_IRBAR0);  // input ring address
+    writel((uint32_t)pmem.paddr + __offsetof(struct caam_job_rings, out), CAAM_ORBAR0);  // output ring address
+
+    /* Initialize job ring sizes */
+    writel(countof(g_rings->in), CAAM_IRSR0);
+    writel(countof(g_rings->in), CAAM_ORSR0);
+}
+
+static void run_job(struct caam_job *job)
+{
+    int ret;
+    uint32_t job_pa;
+    struct dma_pmem pmem;
+
+    /* prepare dma job */
+    ret = prepare_dma(job->dsc, job->dsc_used * sizeof(uint32_t),
+                      DMA_FLAG_TO_DEVICE, &pmem);
+    assert(ret == 1);
+    job_pa = (uint32_t)pmem.paddr;
+
+    /* Add job to input ring */
+    g_rings->out[0] = 0;
+    g_rings->out[1] = 0;
+    g_rings->in[0] = job_pa;
+
+    ret = prepare_dma(g_rings, sizeof(g_rings), DMA_FLAG_TO_DEVICE, &pmem);
+    assert(ret == 1);
+
+    /* get clock */
+    caam_clk_get();
+
+    /* start job */
+    writel(1, CAAM_IRJAR0);
+
+    /* Wait for job ring to complete the job: 1 completed job expected */
+    while(readl(CAAM_ORSFR0) != 1);
+
+    finish_dma(g_rings->out, sizeof(g_rings->out), DMA_FLAG_FROM_DEVICE);
+
+    /* check that descriptor address is the one expected in the out ring */
+    assert(g_rings->out[0] == job_pa);
+
+    job->status = g_rings->out[1];
+
+    /* remove job */
+    writel(1, CAAM_ORJRR0);
+}
+
+int init_caam_env(void)
+{
+    caam_base = (void *)mmap(NULL, CAAM_REG_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_MMIO_ID);
+    if (IS_ERR(caam_base)) {
+        TLOGE("caam base mapping failed(%d)!\n", PTR_ERR(caam_base));
+        return PTR_ERR(caam_base);
+    }
+
+    sram_base = (void *)mmap(NULL, CAAM_SEC_RAM_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_SEC_RAM_MMIO_ID);
+    if (IS_ERR(sram_base)) {
+        TLOGE("caam secure ram base mapping failed(%d)!\n", PTR_ERR(sram_base));
+        return PTR_ERR(sram_base);
+    }
+
+    ccm_base = (void *)mmap(NULL, CCM_REG_SIZE, MMAP_FLAG_IO_HANDLE, CCM_MMIO_ID);
+    if (IS_ERR(ccm_base)) {
+        TLOGE("ccm base mapping failed(%d)!\n", PTR_ERR(ccm_base));
+        return PTR_ERR(ccm_base);
+    }
+
+    TLOGI("caam bases: %p, %p, %p\n", caam_base, sram_base, ccm_base);
+
+    /* allocate rings */
+    assert(sizeof(struct caam_job_rings) <= 16); /* TODO handle alignment */
+    g_rings = memalign(16, sizeof(struct caam_job_rings));
+    if (!g_rings) {
+        TLOGE("out of memory allocating rings\n");
+        return ERR_NO_MEMORY;
+    }
+
+    /* allocate jobs */
+    g_job = memalign(MAX_DSC_NUM * sizeof(uint32_t), sizeof(struct caam_job));
+    if (!g_job) {
+        TLOGE("out of memory allocating job\n");
+        return ERR_NO_MEMORY;
+    }
+
+    caam_open();
+    caam_test();
+
+    return 0;
+}
+
+void caam_open(void)
+{
+    uint32_t temp_reg;
+
+    /* switch on CAAM clock */
+    caam_clk_get();
+
+    /* Initialize job ring addresses */
+    setup_job_rings();
+
+    /* HAB disables interrupts for JR0 so do the same here */
+    temp_reg = readl(CAAM_JRCFGR0_LS) | JRCFG_LS_IMSK;
+    writel(temp_reg, CAAM_JRCFGR0_LS);
+
+    /* if RNG already instantiated then skip it */
+    if ((readl(CAAM_RDSTA) & RDSTA_IF0) != RDSTA_IF0) {
+        /* Enter TRNG Program mode */
+        writel(RTMCTL_PGM, CAAM_RTMCTL);
+
+        /* Set OSC_DIV field to TRNG */
+        temp_reg = readl(CAAM_RTMCTL) | (RNG_TRIM_OSC_DIV << 2);
+        writel(temp_reg, CAAM_RTMCTL);
+
+        /* Set delay */
+        writel(((RNG_TRIM_ENT_DLY << 16) | 0x09C4), CAAM_RTSDCTL);
+        writel((RNG_TRIM_ENT_DLY >> 1), CAAM_RTFRQMIN);
+        writel((RNG_TRIM_ENT_DLY << 4), CAAM_RTFRQMAX);
+
+        /* Resume TRNG Run mode */
+        temp_reg = readl(CAAM_RTMCTL) ^ RTMCTL_PGM;
+        writel(temp_reg, CAAM_RTMCTL);
+
+        temp_reg = readl(CAAM_RTMCTL) | RTMCTL_ERR;
+        writel(temp_reg, CAAM_RTMCTL);
+
+        /* init rng job */
+        assert(sizeof(rng_inst_dsc) <= sizeof(g_job->dsc));
+        memcpy(g_job->dsc, rng_inst_dsc, sizeof(rng_inst_dsc));
+        g_job->dsc_used = countof(rng_inst_dsc);
+
+        run_job(g_job);
+
+        if (g_job->status & JOB_RING_STS) {
+            TLOGE("job failed (0x%08x)\n", g_job->status);
+            abort();
+        }
+
+        /* ensure that the RNG was correctly instantiated */
+        temp_reg = readl(CAAM_RDSTA);
+        if (temp_reg != (RDSTA_IF0 | RDSTA_SKVN)) {
+            TLOGE("Bad RNG state 0x%X\n", temp_reg);
+            abort();
+        }
+    }
+
+    return;
+}
+
+uint32_t caam_decap_blob(const uint8_t *kmod, size_t kmod_size,
+                         uint8_t *plain, const uint8_t *blob, uint32_t size)
+{
+    int ret;
+    uint32_t kmod_pa;
+    uint32_t blob_pa;
+    uint32_t plain_pa;
+    struct dma_pmem pmem;
+
+    assert(size + CAAM_KB_HEADER_LEN < 0xFFFFu);
+    assert(kmod_size == 16);
+
+    ret = prepare_dma((void *)kmod, kmod_size, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    kmod_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma((void *)blob, size + CAAM_KB_HEADER_LEN, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    blob_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma((void *)plain, size, DMA_FLAG_FROM_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    plain_pa = (uint32_t)pmem.paddr;
+
+    g_job->dsc[0] = 0xB0800008;
+    g_job->dsc[1] = 0x14400010;
+    g_job->dsc[2] = kmod_pa;
+    g_job->dsc[3] = 0xF0000000 | (0x0000ffff & (size + CAAM_KB_HEADER_LEN));
+    g_job->dsc[4] = blob_pa;
+    g_job->dsc[5] = 0xF8000000 | (0x0000ffff & (size));
+    g_job->dsc[6] = plain_pa;
+    g_job->dsc[7] = 0x860D0000;
+    g_job->dsc_used = 8;
+
+    run_job(g_job);
+
+    if (g_job->status & JOB_RING_STS) {
+        TLOGE("job failed (0x%08x)\n", g_job->status);
+        return CAAM_FAILURE;
+    }
+
+    finish_dma(plain, size, DMA_FLAG_FROM_DEVICE);
+    return CAAM_SUCCESS;
+}
+
+uint32_t caam_gen_blob(const uint8_t *kmod, size_t kmod_size,
+                       const uint8_t *plain, uint8_t *blob, uint32_t size)
+{
+    int ret;
+    uint32_t kmod_pa;
+    uint32_t blob_pa;
+    uint32_t plain_pa;
+    struct dma_pmem pmem;
+
+    assert(size + CAAM_KB_HEADER_LEN < 0xFFFFu);
+    assert(kmod_size == 16);
+
+    ret = prepare_dma((void *)kmod, kmod_size, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    kmod_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma((void *)plain, size, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    plain_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma((void *)blob, size + CAAM_KB_HEADER_LEN, DMA_FLAG_FROM_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    blob_pa = (uint32_t)pmem.paddr;
+
+    g_job->dsc[0] = 0xB0800008;
+    g_job->dsc[1] = 0x14400010;
+    g_job->dsc[2] = kmod_pa;
+    g_job->dsc[3] = 0xF0000000 | (0x0000ffff & (size));
+    g_job->dsc[4] = plain_pa;
+    g_job->dsc[5] = 0xF8000000 | (0x0000ffff & (size + CAAM_KB_HEADER_LEN));
+    g_job->dsc[6] = blob_pa;
+    g_job->dsc[7] = 0x870D0000;
+    g_job->dsc_used = 8;
+
+    run_job(g_job);
+
+    if (g_job->status & JOB_RING_STS) {
+        TLOGE("job failed (0x%08x)\n", g_job->status);
+        return CAAM_FAILURE;
+    }
+
+    finish_dma(blob, size + CAAM_KB_HEADER_LEN, DMA_FLAG_FROM_DEVICE);
+    return CAAM_SUCCESS;
+}
+
+uint32_t caam_aes_op(const uint8_t *key, size_t key_size,
+                     const uint8_t *in, uint8_t *out, size_t len, bool enc)
+{
+    int ret;
+    uint32_t in_pa;
+    uint32_t out_pa;
+    uint32_t key_pa;
+    struct dma_pmem pmem;
+
+    assert(key_size == 16);
+    assert(len <= 0xFFFFu);
+    assert(len % 16 == 0);
+
+    ret = prepare_dma((void *)key, key_size, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    key_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma((void *)in, len, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    in_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma(out, len, DMA_FLAG_FROM_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    out_pa = (uint32_t)pmem.paddr;
+
+    /*
+     * Now AES key use aeskey.
+     * aeskey is derived from the first 16 bytes of RPMB key.
+     */
+    g_job->dsc[0] = 0xb0800008;
+    g_job->dsc[1] = 0x02000010;
+    g_job->dsc[2] = key_pa;
+    g_job->dsc[3] = enc ? 0x8210020D : 0x8210020C;
+    g_job->dsc[4] = 0x22120000 | (0x0000ffff & len);
+    g_job->dsc[5] = in_pa;
+    g_job->dsc[6] = 0x60300000 | (0x0000ffff & len);
+    g_job->dsc[7] = out_pa;
+    g_job->dsc_used = 8;
+
+    run_job(g_job);
+
+    if (g_job->status & JOB_RING_STS) {
+        TLOGE("job failed (0x%08x)\n", g_job->status);
+        return CAAM_FAILURE;
+    }
+
+    finish_dma(out, len, DMA_FLAG_FROM_DEVICE);
+    return CAAM_SUCCESS;
+}
+
+uint32_t caam_hwrng(uint8_t *out, size_t len)
+{
+    int ret;
+    struct dma_pmem pmem;
+
+    while (len) {
+        ret = prepare_dma(out, len,
+                          DMA_FLAG_FROM_DEVICE | DMA_FLAG_ALLOW_PARTIAL,
+                          &pmem);
+        if (ret != 1) {
+            TLOGE("failed (%d) to prepare dma buffer\n", ret);
+            return CAAM_FAILURE;
+        }
+
+        g_job->dsc[0] = 0xB0800004;
+        g_job->dsc[1] = 0x82500000;
+        g_job->dsc[2] = 0x60340000 | (0x0000ffff & pmem.size);
+        g_job->dsc[3] = (uint32_t)pmem.paddr;
+        g_job->dsc_used = 4;
+
+        run_job(g_job);
+
+        if (g_job->status & JOB_RING_STS) {
+            TLOGE("job failed (0x%08x)\n", g_job->status);
+            return CAAM_FAILURE;
+        }
+
+        finish_dma(out, pmem.size, DMA_FLAG_FROM_DEVICE);
+
+        len -= pmem.size;
+        out += pmem.size;
+    }
+
+    return CAAM_SUCCESS;
+}
+
+void *caam_get_keybox(void)
+{
+    return sram_base;
+}
+
+
+uint32_t caam_hash(uint8_t *in, uint8_t *out, uint32_t len)
+{
+    int ret;
+    uint32_t in_pa;
+    uint32_t out_pa;
+    struct dma_pmem pmem;
+
+    assert(len <= 0xFFFFu);
+
+    ret = prepare_dma((void *)in, len, DMA_FLAG_TO_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    in_pa = (uint32_t)pmem.paddr;
+
+    ret = prepare_dma(out, len, DMA_FLAG_FROM_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    out_pa = (uint32_t)pmem.paddr;
+
+    g_job->dsc[0] = 0xB0800006;
+    g_job->dsc[1] = 0x8441000D;
+    g_job->dsc[2] = 0x24140000 | (0x0000ffff & len);
+    g_job->dsc[3] = in_pa;
+    g_job->dsc[4] = 0x54200000 | 20;
+    g_job->dsc[5] = out_pa;
+    g_job->dsc_used = 6;
+
+    run_job(g_job);
+
+    if (g_job->status & JOB_RING_STS) {
+        TLOGE("job failed (0x%08x)\n", g_job->status);
+        return CAAM_FAILURE;
+    }
+
+    finish_dma(out, len, DMA_FLAG_FROM_DEVICE);
+    return CAAM_SUCCESS;
+}
+
+static void caam_test(void)
+{
+#define BUF_LEN 32
+    uint8_t key[16];
+    uint8_t plain[BUF_LEN];
+    uint8_t plain_bak[BUF_LEN];
+    uint8_t blob[BUF_LEN + CAAM_KB_HEADER_LEN];
+    uint8_t input[BUF_LEN];
+    uint8_t output[BUF_LEN];
+    uint8_t output2[BUF_LEN];
+    uint i = 0;
+
+    /* HWRNG */
+    caam_hwrng(output, sizeof(output));
+    caam_hwrng(output2, sizeof(output2));
+
+    if (memcmp(output, output2, 20) == 0)
+        TLOGE("caam hwrng test failed\n");
+    else
+        TLOGE("caam hwrng test PASS!!!\n");
+
+    /* generate random key */
+    caam_hwrng(key, sizeof(key));
+
+    for (i = 0; i< BUF_LEN; i++) {
+        plain[i] = i + '0';
+        plain_bak[i] = plain[i];
+    }
+
+    caam_gen_blob(key, 16, plain, blob, BUF_LEN);
+    memset(plain, 0xff, sizeof(plain));
+    caam_decap_blob(key, 16, plain, blob, BUF_LEN);
+
+    for (i = 0; i < BUF_LEN; i++) {
+        if (plain[i] != plain_bak[i]) {
+            TLOGE("caam test failed @ %d\n", i);
+            break;
+        }
+    }
+
+    if (i == BUF_LEN)
+        TLOGE("caam keyblob test PASS!!!\n");
+    else
+        TLOGE("caam keyblob test failed!\n");
+
+
+    /* EAS enc test */
+    for (i = 0; i < BUF_LEN; i++) {
+        input[i] = i;
+    }
+    memset(output, 0x55, sizeof(output));
+    memset(output2, 0xAA, sizeof(output2));
+
+    caam_aes_op(key, 16, input, output, BUF_LEN, true);
+    caam_aes_op(key, 16, input, output2, BUF_LEN, true);
+
+    for (i = 0; i < BUF_LEN; i++) {
+        if (output[i] != output2[i]) {
+            TLOGE("caam AES enc error @@%d\n", i);
+            break;
+        }
+    }
+    if (i != BUF_LEN)
+        TLOGE("caam AES enc test failed\n");
+    else
+        TLOGE("caam AES enc test PASS!!!\n");
+
+    /* AES dec test */
+    caam_aes_op(key, 16, output2, output, BUF_LEN, false);
+
+    for (i = 0; i < BUF_LEN; i++) {
+        if (output[i] != input[i]) {
+            TLOGE("caam AES dec error @%d\n", i);
+        }
+    }
+
+    if (i != BUF_LEN)
+        TLOGE("caam AES dec test failed\n");
+    else
+        TLOGE("caam AES dec test PASS!!!\n");
+
+    /* HASH */
+    caam_hash(input, output, sizeof(input));
+    caam_hash(input, output2, sizeof(input));
+
+    if (memcmp(output, output2, 20) != 0)
+        TLOGE("caam hash test failed\n");
+    else
+        TLOGE("caam hash test PASS!!!\n");
+}
+

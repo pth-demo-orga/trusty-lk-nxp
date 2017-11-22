@@ -129,8 +129,6 @@ static void platform_after_vm_init(uint level)
 	else
 		dprintf(CRITICAL, "TZASC inited.\n");
 #endif
-	generic_arm64_map_regs("caam-ram", CAAM_ARB_BASE_ADDR, CAAM_PHY_ARB_BASE_ADDR, CAAM_SEC_RAM_SIZE);
-
 }
 
 LK_INIT_HOOK(platform_after_vm, platform_after_vm_init, LK_INIT_LEVEL_VM + 1);

@@ -29,37 +29,49 @@
 #include <openssl/digest.h>
 #include <openssl/err.h>
 #include <openssl/hkdf.h>
-#include <platform/caam_common.h>
-#include <platform/hwkey_keyslots_common.h>
 
+#include "caam.h"
 #include "common.h"
 #include "uuids.h"
 #include "hwkey_srv_priv.h"
+#include "hwkey_keyslots.h"
 
 #define LOCAL_TRACE  1
 #define LOG_TAG      "hwkey_srv"
 
+static const uint8_t skeymod[16] __attribute__ ((aligned (16))) = {
+	0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
+	0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
+};
+
+static uint8_t kdfv1_salt[32] __attribute__ ((aligned (32)));
+
 /*
- * Derive key V1 - AES based key derive.
+ * Derive key V1 - HKDF based key derive.
  */
 uint32_t derive_key_v1(const uuid_t *uuid,
 		       const uint8_t *ikm_data, size_t ikm_len,
 		       uint8_t *key_buf, size_t *key_len)
 {
-	int ret = 0;
-	struct key_msg ioctl_msg;
-	ioctl_msg.src = ikm_data;
-	ioctl_msg.dst = key_buf;
-	ioctl_msg.len = ikm_len;
+	uint32_t res;
 
-	ret = ioctl(SYSCALL_PLATFORM_FD_CAAM, CAAM_IOCMD_KEY, &ioctl_msg);
+	*key_len = 0;
 
-	if (ret != CAAM_OK) {
-		TLOGE("error in ioctl ret=%d\n", ret);
-		return HWKEY_ERR_GENERIC;
+	if (!ikm_len)
+		return HWKEY_ERR_BAD_LEN;
+
+	if (!HKDF(key_buf, ikm_len, EVP_sha256(),
+		  (const uint8_t *)kdfv1_salt, sizeof(kdfv1_salt),
+		  (const uint8_t *)uuid, sizeof(uuid_t),
+		  ikm_data, ikm_len)) {
+		TLOGE("HDKF failed 0x%x\n", ERR_get_error());
+		memset(key_buf, 0, ikm_len);
+		res = HWKEY_ERR_GENERIC;
+		goto done;
 	}
 	*key_len = ikm_len;
-
+	res = HWKEY_NO_ERROR;
+done:
 	return HWKEY_NO_ERROR;
 }
 
@@ -71,6 +83,8 @@ uint32_t derive_key_v1(const uuid_t *uuid,
 
 /* Secure storage service app uuid */
 static const uuid_t ss_uuid = SECURE_STORAGE_SERVER_APP_UUID;
+static size_t  rpmb_keyblob_len;
+static uint8_t rpmb_keyblob[RPMBKEY_LEN];
 
 /*
  * Fetch RPMB Secure Storage Authentication key
@@ -78,19 +92,21 @@ static const uuid_t ss_uuid = SECURE_STORAGE_SERVER_APP_UUID;
 static uint32_t get_rpmb_ss_auth_key(const struct hwkey_keyslot *slot,
 				     uint8_t *kbuf, size_t kbuf_len, size_t *klen)
 {
-	struct keyslot_parameter_t rpmb_slot;
-	rpmb_slot.slot_id_len = strlen(RPMB_SS_AUTH_KEY_ID);
-	status_t stat;
-	rpmb_slot.status = &stat;
+	uint32_t res;
+	assert(kbuf_len >= RPMB_SS_AUTH_KEY_SIZE);
 
-	rpmb_slot.key_len = klen;
-	strcpy(rpmb_slot.slot_id, RPMB_SS_AUTH_KEY_ID);
-	ioctl(SYSCALL_PLATFORM_FD_KEYSLOTS, KEYSLOT_IOCTL_GET, &rpmb_slot);
+	if (rpmb_keyblob_len != sizeof(rpmb_keyblob))
+		return HWKEY_ERR_NOT_FOUND; /* no RPMB key */
 
-	if (*rpmb_slot.status == HWKEY_NO_ERROR) {
-		memcpy(kbuf, rpmb_slot.key, *klen);
+	res = caam_decap_blob(skeymod, sizeof(skeymod),
+	                      kbuf, rpmb_keyblob, RPMB_SS_AUTH_KEY_SIZE);
+	if (res == CAAM_SUCCESS) {
+		*klen = RPMB_SS_AUTH_KEY_SIZE;
 		return HWKEY_NO_ERROR;
 	} else {
+		/* wipe target buffer */
+		TLOGE("%s: failed to unpack rpmb key\n", __func__);
+		memset(kbuf, 0, RPMB_SS_AUTH_KEY_SIZE);
 		return HWKEY_ERR_GENERIC;
 	}
 }
@@ -106,6 +122,38 @@ static const struct hwkey_keyslot _keys[] = {
 	},
 };
 
+static void unpack_kbox(void)
+{
+	struct keyslot_package *kbox = caam_get_keybox();
+
+	if (strncmp(kbox->magic, KEYPACK_MAGIC, 4)) {
+		TLOGE("Invalid magic\n");
+		abort();
+	}
+
+	/* Copy RPMB blob */
+	assert(!rpmb_keyblob_len); /* key should be unset */
+	if (kbox->rpmb_keyblob_len != sizeof(rpmb_keyblob)) {
+		TLOGE("Unexpected RPMB key len: %u\n", kbox->rpmb_keyblob_len);
+	} else {
+		uint32_t res;
+
+		memcpy(rpmb_keyblob, kbox->rpmb_keyblob, kbox->rpmb_keyblob_len);
+		rpmb_keyblob_len = kbox->rpmb_keyblob_len;
+
+		/* TODO: Fix this, using rpmb key to kdfv1_salt is a BAD idea */
+		res = caam_decap_blob(skeymod, sizeof(skeymod),
+				      kdfv1_salt, rpmb_keyblob, sizeof(kdfv1_salt));
+		assert(res == CAAM_SUCCESS);
+	}
+
+	/* copy pubkey blob */
+
+	/* wipe kbox in sram */
+	memset(kbox, 0, sizeof(*kbox));
+}
+
+
 /*
  *  Initialize Fake HWKEY service provider
  */
@@ -114,6 +162,8 @@ void hwkey_init_srv_provider(void)
 	int rc;
 
 	TLOGE("Init HWKEY service provider\n");
+
+	unpack_kbox();
 
 	/* install key handlers */
 	hwkey_install_keys(_keys, countof(_keys));

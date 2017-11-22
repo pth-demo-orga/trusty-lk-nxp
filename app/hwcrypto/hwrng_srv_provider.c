@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <err.h>
-#include <platform/caam_common.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "caam.h"
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
 #define LOCAL_TRACE  1
 #define LOG_TAG      "hwrng_srv"
 
-
 void hwrng_dev_get_rng_data(uint8_t *buf, size_t buf_len)
 {
-	struct rng_msg msg = {
-		.data = buf,
-		.len = buf_len,
-	};
-	int ret;
-
-	ret = ioctl(SYSCALL_PLATFORM_FD_CAAM, CAAM_IOCMD_RNG, &msg);
-	if (ret != CAAM_OK)
-		TLOGE("error in ioctl ret=%d\n", ret);
+	uint32_t res = caam_hwrng(buf, buf_len);
+	assert(res == CAAM_SUCCESS);
 }
 
 void hwrng_init_srv_provider(void)

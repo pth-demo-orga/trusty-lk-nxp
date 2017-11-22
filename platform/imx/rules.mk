@@ -43,12 +43,9 @@ GLOBAL_INCLUDES += \
 	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include \
 
 MODULE_SRCS := \
-	$(LOCAL_DIR)/caam_dev.c \
 	$(LOCAL_DIR)/debug.c \
 	$(LOCAL_DIR)/platform.c \
-	$(LOCAL_DIR)/keyslots.c \
 	$(LOCAL_DIR)/drivers/imx_uart.c \
-	$(LOCAL_DIR)/drivers/caam.c \
 
 #include SOC specific rules if they exists
 -include $(LOCAL_DIR)/soc/$(PLATFORM_SOC)/rules.mk

@@ -31,8 +31,12 @@
 #ifndef __CAAM_INTERNAL_H__
 #define	__CAAM_INTERNAL_H__
 
+static uint8_t *caam_base;
+static uint8_t *ccm_base;
+static uint8_t *sram_base;
+
 /* 4kbyte pages */
-#define CAAM_SEC_RAM_START_ADDR CAAM_ARB_BASE_ADDR
+#define CAAM_SEC_RAM_START_ADDR (sram_base)
 
 #define SEC_MEM_PAGE0       CAAM_SEC_RAM_START_ADDR
 #define SEC_MEM_PAGE1       (CAAM_SEC_RAM_START_ADDR + 0x1000)
@@ -40,48 +44,49 @@
 #define SEC_MEM_PAGE3       (CAAM_SEC_RAM_START_ADDR + 0x3000)
 
 /* Configuration and special key registers */
-#define CAAM_MCFGR          CAAM_BASE_ADDR + 0x0004
-#define CAAM_SCFGR          CAAM_BASE_ADDR + 0x000c
-#define CAAM_JR0MIDR        CAAM_BASE_ADDR + 0x0010
-#define CAAM_JR1MIDR        CAAM_BASE_ADDR + 0x0018
-#define CAAM_DECORR         CAAM_BASE_ADDR + 0x009c
-#define CAAM_DECO0MID       CAAM_BASE_ADDR + 0x00a0
-#define CAAM_DAR            CAAM_BASE_ADDR + 0x0120
-#define CAAM_DRR            CAAM_BASE_ADDR + 0x0124
-#define CAAM_JDKEKR         CAAM_BASE_ADDR + 0x0400
-#define CAAM_TDKEKR         CAAM_BASE_ADDR + 0x0420
-#define CAAM_TDSKR          CAAM_BASE_ADDR + 0x0440
-#define CAAM_SKNR           CAAM_BASE_ADDR + 0x04e0
-#define CAAM_SMSTA          CAAM_BASE_ADDR + 0x0FB4
-#define CAAM_STA            CAAM_BASE_ADDR + 0x0FD4
-#define CAAM_SMPO_0         CAAM_BASE_ADDR + 0x1FBC
+#define CAAM_MCFGR          ( 0x0004 + caam_base ) 
+#define CAAM_SCFGR          ( 0x000c + caam_base )
+#define CAAM_JR0MIDR        ( 0x0010 + caam_base )
+#define CAAM_JR1MIDR        ( 0x0018 + caam_base )
+#define CAAM_DECORR         ( 0x009c + caam_base )
+#define CAAM_DECO0MID       ( 0x00a0 + caam_base )
+#define CAAM_DAR            ( 0x0120 + caam_base )
+#define CAAM_DRR            ( 0x0124 + caam_base )
+#define CAAM_JDKEKR         ( 0x0400 + caam_base )
+#define CAAM_TDKEKR         ( 0x0420 + caam_base )
+#define CAAM_TDSKR          ( 0x0440 + caam_base )
+#define CAAM_SKNR           ( 0x04e0 + caam_base )
+#define CAAM_SMSTA          ( 0x0FB4 + caam_base )
+#define CAAM_STA            ( 0x0FD4 + caam_base )
+#define CAAM_SMPO_0         ( 0x1FBC + caam_base )
 
 /* RNG registers */
-#define CAAM_RTMCTL         CAAM_BASE_ADDR + 0x0600
-#define CAAM_RTSDCTL        CAAM_BASE_ADDR + 0x0610
-#define CAAM_RTFRQMIN       CAAM_BASE_ADDR + 0x0618
-#define CAAM_RTFRQMAX       CAAM_BASE_ADDR + 0x061C
-#define CAAM_RTSTATUS       CAAM_BASE_ADDR + 0x063C
-#define CAAM_RDSTA          CAAM_BASE_ADDR + 0x06C0
+#define CAAM_RTMCTL         ( 0x0600 + caam_base )
+#define CAAM_RTSDCTL        ( 0x0610 + caam_base )
+#define CAAM_RTFRQMIN       ( 0x0618 + caam_base )
+#define CAAM_RTFRQMAX       ( 0x061C + caam_base )
+#define CAAM_RTSTATUS       ( 0x063C + caam_base )
+#define CAAM_RDSTA          ( 0x06C0 + caam_base )
 
 /* Job Ring 0 registers */
-#define CAAM_IRBAR0         CAAM_BASE_ADDR + 0x1004
-#define CAAM_IRSR0          CAAM_BASE_ADDR + 0x100c
-#define CAAM_IRSAR0         CAAM_BASE_ADDR + 0x1014
-#define CAAM_IRJAR0         CAAM_BASE_ADDR + 0x101c
-#define CAAM_ORBAR0         CAAM_BASE_ADDR + 0x1024
-#define CAAM_ORSR0          CAAM_BASE_ADDR + 0x102c
-#define CAAM_ORJRR0         CAAM_BASE_ADDR + 0x1034
-#define CAAM_ORSFR0         CAAM_BASE_ADDR + 0x103c
-#define CAAM_JRSTAR0        CAAM_BASE_ADDR + 0x1044
-#define CAAM_JRINTR0        CAAM_BASE_ADDR + 0x104c
-#define CAAM_JRCFGR0_MS     CAAM_BASE_ADDR + 0x1050
-#define CAAM_JRCFGR0_LS     CAAM_BASE_ADDR + 0x1054
-#define CAAM_IRRIR0         CAAM_BASE_ADDR + 0x105c
-#define CAAM_ORWIR0         CAAM_BASE_ADDR + 0x1064
-#define CAAM_JRCR0          CAAM_BASE_ADDR + 0x106c
-#define CAAM_SMCJR0         CAAM_BASE_ADDR + 0x10f4
-#define CAAM_SMCSJR0        CAAM_BASE_ADDR + 0x10fc
+#define CAAM_IRBAR0         ( 0x1004 + caam_base )
+#define CAAM_IRSR0          ( 0x100c + caam_base )
+#define CAAM_IRSAR0         ( 0x1014 + caam_base )
+#define CAAM_IRJAR0         ( 0x101c + caam_base )
+#define CAAM_ORBAR0         ( 0x1024 + caam_base )
+#define CAAM_ORSR0          ( 0x102c + caam_base )
+#define CAAM_ORJRR0         ( 0x1034 + caam_base )
+#define CAAM_ORSFR0         ( 0x103c + caam_base )
+#define CAAM_JRSTAR0        ( 0x1044 + caam_base )
+#define CAAM_JRINTR0        ( 0x104c + caam_base )
+#define CAAM_JRCFGR0_MS     ( 0x1050 + caam_base )
+#define CAAM_JRCFGR0_LS     ( 0x1054 + caam_base )
+#define CAAM_IRRIR0         ( 0x105c + caam_base )
+#define CAAM_ORWIR0         ( 0x1064 + caam_base )
+#define CAAM_JRCR0          ( 0x106c + caam_base )
+#define CAAM_SMCJR0         ( 0x10f4 + caam_base )
+#define CAAM_SMCSJR0        ( 0x10fc + caam_base )
+#if 0
 #define CAAM_SMAPJR0(y)     (CAAM_BASE_ADDR + 0x1104 + y*16)
 #define CAAM_SMAG2JR0(y)    (CAAM_BASE_ADDR + 0x1108 + y*16)
 #define CAAM_SMAG1JR0(y)    (CAAM_BASE_ADDR + 0x110C + y*16)
@@ -89,6 +94,7 @@
 #define CAAM_SMAG2JR0_PRTN1 CAAM_BASE_ADDR + 0x1118
 #define CAAM_SMAG1JR0_PRTN1 CAAM_BASE_ADDR + 0x111c
 #define CAAM_SMPO           CAAM_BASE_ADDR + 0x1fbc
+#endif
 
 #define JRCFG_LS_IMSK       0x00000001
 #define JR_MID              2

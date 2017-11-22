@@ -22,14 +22,13 @@
 
 #include <trusty_std.h>
 
-
 #define LOCAL_TRACE  1
 #define LOG_TAG      "hwcrypto_srv"
 
+#include "caam.h"
 #include "common.h"
 #include "hwrng_srv_priv.h"
 #include "hwkey_srv_priv.h"
-
 
 /*
  *  Hexdump content of memory region
@@ -229,6 +228,12 @@ int main(void)
 	uevent_t event;
 
 	TLOGI("Initializing\n");
+
+	rc = init_caam_env();
+	if (rc != 0) {
+		TLOGE("CAAM init env failed (%d)!\n", rc);
+		return rc;
+	}
 
 	/* initialize service providers */
 	hwrng_init_srv_provider();

@@ -29,16 +29,11 @@
 #ifndef _HWKEY_KEYSLOTS_H_
 #define _HWKEY_KEYSLOTS_H_
 
-#include <platform/hwkey_keyslots_common.h>
+#include "caam.h"
 
-#define KEYSLOT_NUM      10
-
-struct hwkey_keyslot_t
-{
-	char* slot_id;
-	unsigned char key[KEYSLOT_KEY_LEN];
-	uint32_t keylen;
-};
+#define RPMBKEY_LEN  (32 + CAAM_KB_HEADER_LEN)
+#define PUBKEY_LEN (1032 + CAAM_KB_HEADER_LEN)
+#define KEYPACK_MAGIC "!KS"
 
 struct keyslot_package
 {
@@ -48,7 +43,5 @@ struct keyslot_package
 	unsigned int pubkey_keyblob_len;
 	unsigned char pubkey_keyblob[PUBKEY_LEN];
 };
-
-int get_key_from_slot(char *slot_id, unsigned char* key, uint32_t * key_len);
 
 #endif
