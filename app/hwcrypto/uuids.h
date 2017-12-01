@@ -16,10 +16,10 @@
 
 #pragma once
 
-/* This App UUID:   {23fe5938-ccd5-4a78-8baf-0f3d05ffc2df} */
-#define GEN_HWCRYPTO_UUID \
-	{ 0x23fe5938, 0xccd5, 0x4a78, \
-		{ 0x8b, 0xaf, 0x0f, 0x3d, 0x05, 0xff, 0xc2, 0xdf }}
+/* This App UUID:   {1adaf827-806b-4bcf-bcec-7e7d2f5a0a5c} */
+#define IMX_HWCRYPTO_UUID \
+	{ 0x1adaf827, 0x806b, 0x4bcf, \
+		{ 0xbc, 0xec, 0x7e, 0x7d, 0x2f, 0x5a, 0x0a, 0x5c }}
 
 /* HWCRYPTO unittest App UUID */
 #define HWCRYPTO_UNITTEST_APP_UUID \

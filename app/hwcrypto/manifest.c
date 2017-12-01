@@ -24,7 +24,7 @@
 
 trusty_app_manifest_t TRUSTY_APP_MANIFEST_ATTRS trusty_app_manifest =
 {
-	.uuid = GEN_HWCRYPTO_UUID,
+	.uuid = IMX_HWCRYPTO_UUID,
 
 	.config_options = {
 		/* Max HEAP size */
