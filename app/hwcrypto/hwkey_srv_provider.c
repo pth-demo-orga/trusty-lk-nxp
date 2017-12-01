@@ -36,8 +36,9 @@
 #include "hwkey_srv_priv.h"
 #include "hwkey_keyslots.h"
 
-#define LOCAL_TRACE  1
-#define LOG_TAG      "hwkey_srv"
+#define TLOG_LVL      TLOG_LVL_DEFAULT
+#define TLOG_TAG      "hwkey_caam"
+#include "tlog.h"
 
 static const uint8_t skeymod[16] __attribute__ ((aligned (16))) = {
 	0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
@@ -161,7 +162,7 @@ void hwkey_init_srv_provider(void)
 {
 	int rc;
 
-	TLOGE("Init HWKEY service provider\n");
+	TLOGI("Init HWKEY service provider\n");
 
 	unpack_kbox();
 

@@ -39,13 +39,13 @@
 #include <trusty_std.h>
 #include <uapi/mm.h>
 
-#define LOCAL_TRACE  1
-#define LOG_TAG      "caam"
-
 #include "caam.h"
-#include "common.h"
 #include <imx-regs.h>
 #include "fsl_caam_internal.h"
+
+#define TLOG_LVL      TLOG_LVL_DEFAULT
+#define TLOG_TAG      "caam_drv"
+#include "tlog.h"
 
 struct caam_job_rings {
     uint32_t in[1];  /* single entry input ring */
@@ -179,7 +179,7 @@ int init_caam_env(void)
         return PTR_ERR(ccm_base);
     }
 
-    TLOGI("caam bases: %p, %p, %p\n", caam_base, sram_base, ccm_base);
+    TLOGD("caam bases: %p, %p, %p\n", caam_base, sram_base, ccm_base);
 
     /* allocate rings */
     assert(sizeof(struct caam_job_rings) <= 16); /* TODO handle alignment */
@@ -528,9 +528,9 @@ static void caam_test(void)
     caam_hwrng(output2, sizeof(output2));
 
     if (memcmp(output, output2, 20) == 0)
-        TLOGE("caam hwrng test failed\n");
+        TLOGI("caam hwrng test failed\n");
     else
-        TLOGE("caam hwrng test PASS!!!\n");
+        TLOGI("caam hwrng test PASS!!!\n");
 
     /* generate random key */
     caam_hwrng(key, sizeof(key));
@@ -552,9 +552,9 @@ static void caam_test(void)
     }
 
     if (i == BUF_LEN)
-        TLOGE("caam keyblob test PASS!!!\n");
+        TLOGI("caam keyblob test PASS!!!\n");
     else
-        TLOGE("caam keyblob test failed!\n");
+        TLOGI("caam keyblob test failed!\n");
 
 
     /* EAS enc test */
@@ -574,9 +574,9 @@ static void caam_test(void)
         }
     }
     if (i != BUF_LEN)
-        TLOGE("caam AES enc test failed\n");
+        TLOGI("caam AES enc test failed\n");
     else
-        TLOGE("caam AES enc test PASS!!!\n");
+        TLOGI("caam AES enc test PASS!!!\n");
 
     /* AES dec test */
     caam_aes_op(key, 16, output2, output, BUF_LEN, false);
@@ -588,17 +588,17 @@ static void caam_test(void)
     }
 
     if (i != BUF_LEN)
-        TLOGE("caam AES dec test failed\n");
+        TLOGI("caam AES dec test failed\n");
     else
-        TLOGE("caam AES dec test PASS!!!\n");
+        TLOGI("caam AES dec test PASS!!!\n");
 
     /* HASH */
     caam_hash(input, output, sizeof(input));
     caam_hash(input, output2, sizeof(input));
 
     if (memcmp(output, output2, 20) != 0)
-        TLOGE("caam hash test failed\n");
+        TLOGI("caam hash test failed\n");
     else
-        TLOGE("caam hash test PASS!!!\n");
+        TLOGI("caam hash test PASS!!!\n");
 }
 

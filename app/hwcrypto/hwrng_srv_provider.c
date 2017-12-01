@@ -25,8 +25,9 @@
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
-#define LOCAL_TRACE  1
-#define LOG_TAG      "hwrng_srv"
+#define TLOG_LVL   TLOG_LVL_DEFAULT
+#define TLOG_TAG   "hwrng_caam"
+#include "tlog.h"
 
 void hwrng_dev_get_rng_data(uint8_t *buf, size_t buf_len)
 {

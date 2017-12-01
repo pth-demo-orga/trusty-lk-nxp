@@ -27,8 +27,9 @@
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
-#define LOCAL_TRACE       1
-#define LOG_TAG           "hwrng_srv"
+#define TLOG_LVL      TLOG_LVL_DEFAULT
+#define TLOG_TAG      "hwrng_srv"
+#include "tlog.h"
 
 #define HWRNG_SRV_NAME       HWRNG_PORT
 #define MAX_HWRNG_MSG_SIZE   4096
