@@ -31,7 +31,7 @@
 
 #include <platform/tzasc.h>
 
-tzasc_region_t tzasc_regions[] = {
+static const tzasc_region_t tzasc_regions[] = {
 	{
 	.addr_l = 0,
 	.addr_h = 0,
@@ -58,8 +58,6 @@ tzasc_region_t tzasc_regions[] = {
 		TZ_ATTR_REGION_SIZE(TZ_REGION_SIZE_32M),
 		TZ_REGION_ENABLE)
 	},
-
-	{0}
 };
 
 

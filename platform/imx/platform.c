@@ -124,10 +124,7 @@ static void platform_after_vm_init(uint level)
 #ifdef WITH_TZASC
 	/* Initialize TZASC. */
 	/* TZASC registers are mapped by initial mapping */
-	if (initial_tzasc(tzasc_regions) != 0)
-		dprintf(CRITICAL, "TZASC init error!\n");
-	else
-		dprintf(CRITICAL, "TZASC inited.\n");
+	initial_tzasc(tzasc_regions, countof(tzasc_regions));
 #endif
 }
 

@@ -38,6 +38,9 @@ MEMSIZE ?= 0x02000000
 # TEE kernel virt address
 KERNEL_BASE ?= $(MEMBASE)
 
+# Enable TZ controller
+WITH_TZASC ?= true
+
 GLOBAL_INCLUDES += \
 	$(LOCAL_DIR)/common/include \
 	$(LOCAL_DIR)/soc/$(PLATFORM_SOC)/include \
@@ -54,7 +57,7 @@ ifeq (true,$(call TOBOOL,$(WITH_TZASC)))
 MODULE_SRCS += \
 	$(LOCAL_DIR)/tzasc.c
 
-GLOBAL_DEFINES += \
+MODULE_DEFINES += \
 	WITH_TZASC=1
 endif
 

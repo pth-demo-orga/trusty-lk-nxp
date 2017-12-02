@@ -26,32 +26,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <compiler.h>
 #include <platform/tzasc.h>
 
-int check_region_table_end(tzasc_region_t *region) {
-
-	if ((region->addr_l | region->addr_h | region->attr) == 0)
-		return 1;
-
-	return 0;
-}
-
-int write_tzasc_region(tzasc_region_t *region, int region_num) {
-
-	if (region != NULL) {
-		TZ_REG(TZ_GET_REGION_ADDR(region_num)) = region->addr_l;
-		TZ_REG(TZ_GET_REGION_ADDR(region_num) + 0x4) = region->addr_h;
-		TZ_REG(TZ_GET_REGION_ADDR(region_num) + 0x8) = region->attr;
-	} else {
-		return -1;
-	}
-
-    return 0;
-}
-
-int initial_tzasc(tzasc_region_t* regions) {
-
-	int ret = 0;
+void initial_tzasc(const tzasc_region_t *r, uint num)
+{
 	/*
 	 * ACTION field 0x2 means
 	 * sets tzasc_int HIGH and issues an OKAY response
@@ -59,18 +38,11 @@ int initial_tzasc(tzasc_region_t* regions) {
 	TZ_REG(TZ_ACTION) = 0x2;
 
 	//From number 0 region to config.
-	int region_num = 0;
-	while(!(check_region_table_end(regions))) {
-		if (write_tzasc_region(regions, region_num)) {
-			ret = -1;
-			goto out;
-		}
-		region_num++;
-		regions++;
+	for (uint i = 0; i < num; i++, r++)  {
+		TZ_REG(TZ_GET_REGION_ADDR(i)) = r->addr_l;
+		TZ_REG(TZ_GET_REGION_ADDR(i) + 0x4) = r->addr_h;
+		TZ_REG(TZ_GET_REGION_ADDR(i) + 0x8) = r->attr;
 	}
 
 	TZ_REG(TZ_INT_CLEAR) = 0;
-
-out:
-	return ret;
 }

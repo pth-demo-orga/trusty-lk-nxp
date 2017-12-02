@@ -89,6 +89,6 @@ typedef struct tzasc_region{
 	uint32_t attr;
 } tzasc_region_t;
 
-int initial_tzasc(tzasc_region_t* regions);
+void initial_tzasc(const tzasc_region_t *r, uint num);
 
 #endif
