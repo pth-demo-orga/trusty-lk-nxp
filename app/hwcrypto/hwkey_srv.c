@@ -48,8 +48,12 @@ static tipc_event_handler_t hwkey_port_evt_handler = {
 	.proc = hwkey_port_handler,
 };
 
-static uint8_t req_data[HWKEY_MAX_PAYLOAD_SIZE+1];
-static uint8_t key_data[HWKEY_MAX_PAYLOAD_SIZE];
+/* Make sure that key_data and reg_data buffers are not crossing page boundary so it is
+ * safe to pass them to DMA. An extra byte for req_data buf is used to zero terminate string
+ * so it is OK to have it on separate page as it will never be accesed by DMA engine.
+ */
+static uint8_t key_data[HWKEY_MAX_PAYLOAD_SIZE]   __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
+static uint8_t req_data[HWKEY_MAX_PAYLOAD_SIZE+1] __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
 
 static uint key_slot_cnt;
 static const struct hwkey_keyslot *key_slots;
