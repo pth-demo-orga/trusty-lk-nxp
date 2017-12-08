@@ -129,3 +129,18 @@ static void platform_after_vm_init(uint level)
 }
 
 LK_INIT_HOOK(platform_after_vm, platform_after_vm_init, LK_INIT_LEVEL_VM + 1);
+
+#if WITH_VIRT_TIMER_INIT
+extern void virt_timer_init(void);
+
+/* Reset CNTVOFF register to be able to use virt arch timer */
+static void platform_per_cpu_virt_timer_init(uint level)
+{
+	virt_timer_init();
+}
+
+LK_INIT_HOOK_FLAGS(platform_per_cpu_virt_timer,
+                   platform_per_cpu_virt_timer_init,
+                   LK_INIT_LEVEL_PLATFORM_EARLY, LK_INIT_FLAG_ALL_CPUS);
+
+#endif

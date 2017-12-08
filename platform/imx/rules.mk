@@ -30,6 +30,7 @@ ARM_CPU := cortex-a7
 WITH_LIB_SM := 1
 WITH_LIB_SM_MONITOR := 1
 WITH_LIB_VERSION := 1
+WITH_VIRT_TIMER_INIT ?= 1
 
 # TEE memory phys address and size
 MEMBASE ?= 0x9e000000
@@ -59,6 +60,14 @@ MODULE_SRCS += \
 
 MODULE_DEFINES += \
 	WITH_TZASC=1
+endif
+
+ifeq (true,$(call TOBOOL,$(WITH_VIRT_TIMER_INIT)))
+MODULE_SRCS += \
+	$(LOCAL_DIR)/vtimer.S
+
+MODULE_DEFINES += \
+	WITH_VIRT_TIMER_INIT=1
 endif
 
 MODULE_DEPS += \
