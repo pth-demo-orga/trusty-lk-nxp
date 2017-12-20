@@ -515,6 +515,56 @@ uint32_t caam_hash(uint8_t *in, uint8_t *out, uint32_t len)
     return CAAM_SUCCESS;
 }
 
+uint32_t caam_gen_kdfv1_root_key(uint8_t *out, uint32_t size)
+{
+    int ret;
+    uint32_t pa;
+    struct dma_pmem pmem;
+
+    assert(size == 32);
+
+    ret = prepare_dma((void *)out, size, DMA_FLAG_FROM_DEVICE, &pmem);
+    if (ret != 1) {
+        TLOGE("failed (%d) to prepare dma buffer\n", ret);
+        return CAAM_FAILURE;
+    }
+    pa = (uint32_t)pmem.paddr;
+
+    /*
+     * This sequence uses caam blob generation protocol in
+     * master key verification mode to generate unique for device
+     * persistent 256-bit sequence that we will be using a root key
+     * for our key derivation function v1. This is the only known way
+     * on this platform of producing persistent unique device key that
+     * does not require persistent storage. Dsc[2..5] effectively contains
+     * 16 bytes of randomly generated salt that gets mixed (among other
+     * things) with device master key to produce result.
+     */
+    g_job->dsc[0] = 0xB080000B;
+    g_job->dsc[1] = 0x14C00010;
+    g_job->dsc[2] = 0x7083A393;  /* salt word 0 */
+    g_job->dsc[3] = 0x2CC0C9F7;  /* salt word 1 */
+    g_job->dsc[4] = 0xFC5D2FC0;  /* salt word 2 */
+    g_job->dsc[5] = 0x2C4B04E7;  /* salt word 3 */
+    g_job->dsc[6] = 0xF0000000;
+    g_job->dsc[7] = 0;
+    g_job->dsc[8] = 0xF8000030;
+    g_job->dsc[9] = pa;
+    g_job->dsc[10] = 0x870D0002;
+    g_job->dsc_used = 11;
+
+    run_job(g_job);
+
+    if (g_job->status & JOB_RING_STS) {
+        TLOGE("job failed (0x%08x)\n", g_job->status);
+        return CAAM_FAILURE;
+    }
+
+    finish_dma(out, size, DMA_FLAG_FROM_DEVICE);
+    return CAAM_SUCCESS;
+}
+
+
 #if  WITH_CAAM_SELF_TEST
 
 /*
@@ -639,10 +689,25 @@ static void caam_hash_test(void)
         TLOGI("caam hash test PASS!!!\n");
 }
 
+static void caam_kdfv1_root_key_test(void)
+{
+    DECLARE_SG_SAFE_BUF(out1, 32);
+    DECLARE_SG_SAFE_BUF(out2, 32);
+
+    caam_gen_kdfv1_root_key(out1, 32);
+    caam_gen_kdfv1_root_key(out2, 32);
+
+    if (memcmp(out1, out2, 32) != 0)
+        TLOGI("caam gen kdf root key test FAILED!!!\n");
+    else
+        TLOGI("caam gen kdf root key test PASS!!!\n");
+}
+
 static void caam_test(void)
 {
     caam_hwrng_test();
     caam_blob_test();
+    caam_kdfv1_root_key_test();
     caam_aes_test();
     caam_hash_test();
 }

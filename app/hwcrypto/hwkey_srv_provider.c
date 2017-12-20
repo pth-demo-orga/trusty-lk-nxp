@@ -45,7 +45,7 @@ static const uint8_t skeymod[16] __attribute__ ((aligned (16))) = {
 	0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
 };
 
-static uint8_t kdfv1_salt[32] __attribute__ ((aligned (32)));
+static uint8_t kdfv1_key[32] __attribute__ ((aligned (32)));
 
 /*
  * Derive key V1 - HKDF based key derive.
@@ -62,7 +62,7 @@ uint32_t derive_key_v1(const uuid_t *uuid,
 		return HWKEY_ERR_BAD_LEN;
 
 	if (!HKDF(key_buf, ikm_len, EVP_sha256(),
-		  (const uint8_t *)kdfv1_salt, sizeof(kdfv1_salt),
+		  (const uint8_t *)kdfv1_key, sizeof(kdfv1_key),
 		  (const uint8_t *)uuid, sizeof(uuid_t),
 		  ikm_data, ikm_len)) {
 		TLOGE("HDKF failed 0x%x\n", ERR_get_error());
@@ -125,6 +125,7 @@ static const struct hwkey_keyslot _keys[] = {
 
 static void unpack_kbox(void)
 {
+	uint32_t res;
 	struct keyslot_package *kbox = caam_get_keybox();
 
 	if (strncmp(kbox->magic, KEYPACK_MAGIC, 4)) {
@@ -137,16 +138,13 @@ static void unpack_kbox(void)
 	if (kbox->rpmb_keyblob_len != sizeof(rpmb_keyblob)) {
 		TLOGE("Unexpected RPMB key len: %u\n", kbox->rpmb_keyblob_len);
 	} else {
-		uint32_t res;
-
 		memcpy(rpmb_keyblob, kbox->rpmb_keyblob, kbox->rpmb_keyblob_len);
 		rpmb_keyblob_len = kbox->rpmb_keyblob_len;
-
-		/* TODO: Fix this, using rpmb key to kdfv1_salt is a BAD idea */
-		res = caam_decap_blob(skeymod, sizeof(skeymod),
-				      kdfv1_salt, rpmb_keyblob, sizeof(kdfv1_salt));
-		assert(res == CAAM_SUCCESS);
 	}
+
+	/* generate kdfv1 root it should never fail */
+	res = caam_gen_kdfv1_root_key(kdfv1_key, sizeof(kdfv1_key));
+	assert(res == CAAM_SUCCESS);
 
 	/* copy pubkey blob */
 

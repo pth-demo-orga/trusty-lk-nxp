@@ -54,6 +54,8 @@ uint32_t caam_aes_op(const uint8_t *key, size_t key_size,
 
 uint32_t caam_hwrng(uint8_t *output_ptr, uint32_t output_len);
 
+uint32_t caam_gen_kdfv1_root_key(uint8_t *out, size_t size);
+
 void *caam_get_keybox(void);
 
 /* Declare small scatter gather safe buffer (size must be power of 2) */
