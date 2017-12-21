@@ -80,7 +80,9 @@ const uint32_t rng_inst_dsc[] = {
     RNG_INST_DESC9
 };
 
+#if WITH_CAAM_SELF_TEST
 static void caam_test(void);
+#endif
 
 static void caam_clk_get(void)
 {
@@ -197,7 +199,9 @@ int init_caam_env(void)
     }
 
     caam_open();
+#if WITH_CAAM_SELF_TEST
     caam_test();
+#endif
 
     return 0;
 }
@@ -511,94 +515,137 @@ uint32_t caam_hash(uint8_t *in, uint8_t *out, uint32_t len)
     return CAAM_SUCCESS;
 }
 
-static void caam_test(void)
+#if  WITH_CAAM_SELF_TEST
+
+/*
+ * HWRNG
+ */
+static void caam_hwrng_test(void)
 {
-#define BUF_LEN 32
-    uint8_t key[16];
-    uint8_t plain[BUF_LEN];
-    uint8_t plain_bak[BUF_LEN];
-    uint8_t blob[BUF_LEN + CAAM_KB_HEADER_LEN];
-    uint8_t input[BUF_LEN];
-    uint8_t output[BUF_LEN];
-    uint8_t output2[BUF_LEN];
-    uint i = 0;
+    DECLARE_SG_SAFE_BUF(out1, 32);
+    DECLARE_SG_SAFE_BUF(out2, 32);
 
-    /* HWRNG */
-    caam_hwrng(output, sizeof(output));
-    caam_hwrng(output2, sizeof(output2));
+    caam_hwrng(out1, sizeof(out1));
+    caam_hwrng(out2, sizeof(out2));
 
-    if (memcmp(output, output2, 20) == 0)
-        TLOGI("caam hwrng test failed\n");
+    if (memcmp(out1, out2, sizeof(out1)) == 0)
+        TLOGI("caam hwrng test FAILED!!!\n");
     else
         TLOGI("caam hwrng test PASS!!!\n");
+}
 
-    /* generate random key */
-    caam_hwrng(key, sizeof(key));
+/*
+ * Blob
+ */
+static void caam_blob_test(void)
+{
+    uint i = 0;
+    DECLARE_SG_SAFE_BUF(keymd, 16);
+    DECLARE_SG_SAFE_BUF(plain, 32);
+    DECLARE_SG_SAFE_BUF(plain_bak, 32);
+    DECLARE_SG_SAFE_BUF(blob, 128);
 
-    for (i = 0; i< BUF_LEN; i++) {
+    /* generate random key mod */
+    caam_hwrng(keymd, sizeof(keymd));
+
+    /* build known input */
+    for (i = 0; i< sizeof(plain); i++) {
         plain[i] = i + '0';
         plain_bak[i] = plain[i];
     }
 
-    caam_gen_blob(key, 16, plain, blob, BUF_LEN);
+    /* encap  blob */
+    caam_gen_blob(keymd, 16, plain, blob, sizeof(plain));
     memset(plain, 0xff, sizeof(plain));
-    caam_decap_blob(key, 16, plain, blob, BUF_LEN);
 
-    for (i = 0; i < BUF_LEN; i++) {
-        if (plain[i] != plain_bak[i]) {
-            TLOGE("caam test failed @ %d\n", i);
-            break;
-        }
-    }
+    /* decap blob */
+    caam_decap_blob(keymd, 16, plain, blob, sizeof(plain));
 
-    if (i == BUF_LEN)
-        TLOGI("caam keyblob test PASS!!!\n");
+    /* compare with original */
+    if (memcmp(plain, plain_bak, sizeof(plain)))
+        TLOGI("caam blob test FAILED!!!\n");
     else
-        TLOGI("caam keyblob test failed!\n");
+        TLOGI("caam blob test PASS!!!\n");
+}
 
+/*
+ *  AES
+ */
+static void caam_aes_test(void)
+{
+    DECLARE_SG_SAFE_BUF(key, 16);
+    DECLARE_SG_SAFE_BUF(buf1, 32);
+    DECLARE_SG_SAFE_BUF(buf2, 32);
+    DECLARE_SG_SAFE_BUF(buf3, 32);
 
-    /* EAS enc test */
-    for (i = 0; i < BUF_LEN; i++) {
-        input[i] = i;
+    /* generate random key */
+    caam_hwrng(key, sizeof(key));
+
+    /* create input */
+    for (uint i = 0; i < sizeof(buf1); i++) {
+        buf1[i] = i + '0';
     }
-    memset(output, 0x55, sizeof(output));
-    memset(output2, 0xAA, sizeof(output2));
 
-    caam_aes_op(key, 16, input, output, BUF_LEN, true);
-    caam_aes_op(key, 16, input, output2, BUF_LEN, true);
+    /* reset output */
+    memset(buf2, 0x55, sizeof(buf2));
+    memset(buf3, 0xAA, sizeof(buf3));
 
-    for (i = 0; i < BUF_LEN; i++) {
-        if (output[i] != output2[i]) {
-            TLOGE("caam AES enc error @@%d\n", i);
-            break;
-        }
-    }
-    if (i != BUF_LEN)
-        TLOGI("caam AES enc test failed\n");
+    /* encrypt same data twice */
+    caam_aes_op(key, 16, buf1, buf2, sizeof(buf1), true);
+    caam_aes_op(key, 16, buf1, buf3, sizeof(buf1), true);
+
+    /* compare results */
+    if (memcmp(buf2, buf3, sizeof(buf1)))
+        TLOGI("caam AES enc test FAILED!!!\n");
     else
         TLOGI("caam AES enc test PASS!!!\n");
 
-    /* AES dec test */
-    caam_aes_op(key, 16, output2, output, BUF_LEN, false);
+    /* decrypt res */
+    caam_aes_op(key, 16, buf3, buf2, sizeof(buf3), false);
 
-    for (i = 0; i < BUF_LEN; i++) {
-        if (output[i] != input[i]) {
-            TLOGE("caam AES dec error @%d\n", i);
-        }
+    /* compare with original */
+    if (memcmp(buf1, buf2, sizeof(buf1)))
+        TLOGI("caam AES enc test FAILED!!!\n");
+    else
+        TLOGI("caam AES enc test PASS!!!\n");
+}
+
+/*
+ * HASH (SHA-1)
+ */
+static void caam_hash_test(void)
+{
+    DECLARE_SG_SAFE_BUF(in, 32);
+    DECLARE_SG_SAFE_BUF(hash1, 32);
+    DECLARE_SG_SAFE_BUF(hash2, 32);
+
+    /* generate input */
+    for (uint i = 0; i < sizeof(in); i++) {
+        in[i] = i + '1';
     }
 
-    if (i != BUF_LEN)
-        TLOGI("caam AES dec test failed\n");
-    else
-        TLOGI("caam AES dec test PASS!!!\n");
+    /* reset output */
+    memset(hash1, 0x55, sizeof(hash1));
+    memset(hash2, 0xAA, sizeof(hash2));
 
-    /* HASH */
-    caam_hash(input, output, sizeof(input));
-    caam_hash(input, output2, sizeof(input));
+    /* invoke hash twice */
+    caam_hash(in, hash1, sizeof(in));
+    caam_hash(in, hash2, sizeof(in));
 
-    if (memcmp(output, output2, 20) != 0)
-        TLOGI("caam hash test failed\n");
+    /* compare results */
+    if (memcmp(hash1, hash2, 20) != 0)
+        TLOGI("caam hash test FAILED!!!\n");
     else
         TLOGI("caam hash test PASS!!!\n");
 }
+
+static void caam_test(void)
+{
+    caam_hwrng_test();
+    caam_blob_test();
+    caam_aes_test();
+    caam_hash_test();
+}
+
+#endif /* WITH_CAAM_SELF_TEST */
 
