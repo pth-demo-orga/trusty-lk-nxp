@@ -37,11 +37,11 @@
 
 struct keyslot_package
 {
-	char magic[4];
-	unsigned int rpmb_keyblob_len;
-	unsigned char rpmb_keyblob[RPMBKEY_LEN];
-	unsigned int pubkey_keyblob_len;
-	unsigned char pubkey_keyblob[PUBKEY_LEN];
+    char magic[4];
+    unsigned int rpmb_keyblob_len;
+    unsigned char rpmb_keyblob[RPMBKEY_LEN];
+    unsigned int pubkey_keyblob_len;
+    unsigned char pubkey_keyblob[PUBKEY_LEN];
 };
 
 #endif

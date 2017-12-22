@@ -23,8 +23,8 @@
 typedef void (*event_handler_proc_t) (const uevent_t *ev, void *ctx);
 
 typedef struct tipc_event_handler {
-	event_handler_proc_t proc;
-	void *priv;
+    event_handler_proc_t proc;
+    void *priv;
 } tipc_event_handler_t;
 
 
@@ -40,10 +40,10 @@ int tipc_send_single_buf(handle_t chan, const void *buf, size_t len);
 int tipc_recv_single_buf(handle_t chan, void *buf, size_t len);
 
 int tipc_send_two_segments(handle_t chan, const void *hdr, size_t hdr_len,
-			   const void *payload, size_t payload_len);
+                           const void *payload, size_t payload_len);
 
 int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
-			   void *payload, size_t payload_len);
+                           void *payload, size_t payload_len);
 
 /*
  * tipc services

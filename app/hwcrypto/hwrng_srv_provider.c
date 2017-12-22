@@ -31,19 +31,19 @@
 
 void hwrng_dev_get_rng_data(uint8_t *buf, size_t buf_len)
 {
-	uint32_t res = caam_hwrng(buf, buf_len);
-	assert(res == CAAM_SUCCESS);
+    uint32_t res = caam_hwrng(buf, buf_len);
+    assert(res == CAAM_SUCCESS);
 }
 
 void hwrng_init_srv_provider(void)
 {
-	int rc;
+    int rc;
 
-	TLOGE("Init HWRNG service provider\n");
-	/* Nothing to initialize here, just start service */
-	rc = hwrng_start_service();
-	if (rc != NO_ERROR) {
-		TLOGE("failed (%d) to start HWRNG service\n", rc);
-	}
+    TLOGE("Init HWRNG service provider\n");
+    /* Nothing to initialize here, just start service */
+    rc = hwrng_start_service();
+    if (rc != NO_ERROR) {
+        TLOGE("failed (%d) to start HWRNG service\n", rc);
+    }
 }
 

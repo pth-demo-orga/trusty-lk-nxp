@@ -31,13 +31,13 @@
 
 #include <linux/types.h>
 
-#define CAAM_MMIO_ID		8
-#define CAAM_SEC_RAM_MMIO_ID	9
-#define CCM_MMIO_ID		10
+#define CAAM_MMIO_ID            8
+#define CAAM_SEC_RAM_MMIO_ID    9
+#define CCM_MMIO_ID            10
 
-#define CAAM_KB_HEADER_LEN	48
-#define CAAM_SUCCESS		0
-#define CAAM_FAILURE		1
+#define CAAM_KB_HEADER_LEN     48
+#define CAAM_SUCCESS            0
+#define CAAM_FAILURE            1
 
 int init_caam_env(void);
 

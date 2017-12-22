@@ -36,18 +36,18 @@
  */
 void _hexdump8(const void *ptr, size_t len)
 {
-	addr_t address = (addr_t)ptr;
-	size_t count;
-	size_t i;
+    addr_t address = (addr_t)ptr;
+    size_t count;
+    size_t i;
 
-	for (count = 0 ; count < len; count += 16) {
-		fprintf(stderr, "0x%08lx: ", address);
-		for (i=0; i < MIN(len - count, 16); i++) {
-			fprintf(stderr, "0x%02hhx ", *(const uint8_t *)(address + i));
-		}
-		fprintf(stderr, "\n");
-		address += 16;
-	}
+    for (count = 0 ; count < len; count += 16) {
+        fprintf(stderr, "0x%08lx: ", address);
+        for (i=0; i < MIN(len - count, 16); i++) {
+            fprintf(stderr, "0x%02hhx ", *(const uint8_t *)(address + i));
+        }
+        fprintf(stderr, "\n");
+        address += 16;
+    }
 }
 
 
@@ -56,15 +56,14 @@ void _hexdump8(const void *ptr, size_t len)
  */
 void tipc_handle_port_errors(const uevent_t *ev)
 {
-	if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
-	    (ev->event & IPC_HANDLE_POLL_HUP) ||
-	    (ev->event & IPC_HANDLE_POLL_MSG) ||
-	    (ev->event & IPC_HANDLE_POLL_SEND_UNBLOCKED)) {
-		/* should never happen with port handles */
-		TLOGE("error event (0x%x) for port (%d)\n",
-		       ev->event, ev->handle);
-		abort();
-	}
+    if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
+        (ev->event & IPC_HANDLE_POLL_HUP) ||
+        (ev->event & IPC_HANDLE_POLL_MSG) ||
+        (ev->event & IPC_HANDLE_POLL_SEND_UNBLOCKED)) {
+        /* should never happen with port handles */
+        TLOGE("error event (0x%x) for port (%d)\n", ev->event, ev->handle);
+        abort();
+    }
 }
 
 /*
@@ -72,13 +71,12 @@ void tipc_handle_port_errors(const uevent_t *ev)
  */
 void tipc_handle_chan_errors(const uevent_t *ev)
 {
-	if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
-	    (ev->event & IPC_HANDLE_POLL_READY)) {
-		/* close it as it is in an error state */
-		TLOGE("error event (0x%x) for chan (%d)\n",
-		       ev->event, ev->handle);
-		abort();
-	}
+    if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
+        (ev->event & IPC_HANDLE_POLL_READY)) {
+        /* close it as it is in an error state */
+        TLOGE("error event (0x%x) for chan (%d)\n", ev->event, ev->handle);
+        abort();
+    }
 }
 
 /*
@@ -86,16 +84,16 @@ void tipc_handle_chan_errors(const uevent_t *ev)
  */
 int tipc_send_single_buf(handle_t chan, const void *buf, size_t len)
 {
-	iovec_t iov = {
-			.base = (void *)buf,
-			.len  = len,
-	};
-	ipc_msg_t msg = {
-			.iov = &iov,
-			.num_iov = 1,
+    iovec_t iov = {
+            .base = (void *)buf,
+            .len  = len,
+    };
+    ipc_msg_t msg = {
+            .iov = &iov,
+            .num_iov = 1,
 
-	};
-	return send_msg(chan, &msg);
+    };
+    return send_msg(chan, &msg);
 }
 
 /*
@@ -103,91 +101,91 @@ int tipc_send_single_buf(handle_t chan, const void *buf, size_t len)
  */
 int tipc_recv_single_buf(handle_t chan, void *buf, size_t len)
 {
-	int rc;
-	ipc_msg_info_t msg_inf;
+    int rc;
+    ipc_msg_info_t msg_inf;
 
-	rc = get_msg(chan, &msg_inf);
-	if (rc)
-		return rc;
+    rc = get_msg(chan, &msg_inf);
+    if (rc)
+        return rc;
 
-	if (msg_inf.len != len) {
-		/* unexpected msg size */
-		rc = ERR_BAD_LEN;
-	} else {
-		iovec_t iov = {
-				.base = buf,
-				.len  = len,
-		};
-		ipc_msg_t msg = {
-				.iov = &iov,
-				.num_iov = 1,
-		};
-		rc = read_msg(chan, msg_inf.id, 0, &msg);
-	}
+    if (msg_inf.len != len) {
+        /* unexpected msg size */
+        rc = ERR_BAD_LEN;
+    } else {
+        iovec_t iov = {
+                .base = buf,
+                .len  = len,
+        };
+        ipc_msg_t msg = {
+                .iov = &iov,
+                .num_iov = 1,
+        };
+        rc = read_msg(chan, msg_inf.id, 0, &msg);
+    }
 
-	put_msg(chan, msg_inf.id);
-	return rc;
+    put_msg(chan, msg_inf.id);
+    return rc;
 }
 
 /*
  * Send message consisting of two segments (header and payload)
  */
 int tipc_send_two_segments(handle_t chan, const void *hdr, size_t hdr_len,
-			   const void *payload, size_t payload_len)
+                           const void *payload, size_t payload_len)
 {
-	iovec_t iovs[2] = {
-		{
-			.base = (void *)hdr,
-			.len =  hdr_len,
-		},
-		{
-			.base = (void *)payload,
-			.len  = payload_len,
-		},
-	};
-	ipc_msg_t msg = {
-		.iov = iovs,
-		.num_iov = countof(iovs),
-	};
-	return send_msg(chan, &msg);
+    iovec_t iovs[2] = {
+        {
+            .base = (void *)hdr,
+            .len =  hdr_len,
+        },
+        {
+            .base = (void *)payload,
+            .len  = payload_len,
+        },
+    };
+    ipc_msg_t msg = {
+        .iov = iovs,
+        .num_iov = countof(iovs),
+    };
+    return send_msg(chan, &msg);
 }
 
 /*
  * Receive message consisting of two segments (header and payload).
  */
 int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
-			   void *payload, size_t payload_len)
+                           void *payload, size_t payload_len)
 {
-	int rc;
-	ipc_msg_info_t msg_inf;
+    int rc;
+    ipc_msg_info_t msg_inf;
 
-	rc = get_msg(chan, &msg_inf);
-	if (rc)
-		return rc;
+    rc = get_msg(chan, &msg_inf);
+    if (rc)
+        return rc;
 
-	if (msg_inf.len < hdr_len) {
-		/* unexpected msg size */
-		rc = ERR_BAD_LEN;
-	} else {
-		iovec_t iovs[2] = {
-			{
-				.base = hdr,
-				.len =  hdr_len,
-			},
-			{
-				.base = payload,
-				.len =  payload_len,
-			}
-		};
-		ipc_msg_t msg = {
-				.iov = iovs,
-				.num_iov = countof(iovs),
-		};
-		rc = read_msg(chan, msg_inf.id, 0, &msg);
-	}
+    if (msg_inf.len < hdr_len) {
+        /* unexpected msg size */
+        rc = ERR_BAD_LEN;
+    } else {
+        iovec_t iovs[2] = {
+            {
+                .base = hdr,
+                .len =  hdr_len,
+            },
+            {
+                .base = payload,
+                .len =  payload_len,
+            }
+        };
+        ipc_msg_t msg = {
+                .iov = iovs,
+                .num_iov = countof(iovs),
+        };
+        rc = read_msg(chan, msg_inf.id, 0, &msg);
+    }
 
-	put_msg(chan, msg_inf.id);
-	return rc;
+    put_msg(chan, msg_inf.id);
+    return rc;
 }
 
 /*
@@ -195,29 +193,29 @@ int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
  */
 static void dispatch_event(const uevent_t *ev)
 {
-	assert(ev);
+    assert(ev);
 
-	if (ev->event == IPC_HANDLE_POLL_NONE) {
-		/* not really an event, do nothing */
-		TLOGI("got an empty event\n");
-		return;
-	}
+    if (ev->event == IPC_HANDLE_POLL_NONE) {
+        /* not really an event, do nothing */
+        TLOGI("got an empty event\n");
+        return;
+    }
 
-	/* check if we have handler */
-	struct tipc_event_handler *handler = ev->cookie;
-	if (handler && handler->proc) {
-		/* invoke it */
-		handler->proc(ev, handler->priv);
-		return;
-	}
+    /* check if we have handler */
+    struct tipc_event_handler *handler = ev->cookie;
+    if (handler && handler->proc) {
+        /* invoke it */
+        handler->proc(ev, handler->priv);
+        return;
+    }
 
-	/* no handler? close it */
-	TLOGE("no handler for event (0x%x) with handle %d\n",
-	       ev->event, ev->handle);
+    /* no handler? close it */
+    TLOGE("no handler for event (0x%x) with handle %d\n",
+           ev->event, ev->handle);
 
-	close(ev->handle);
+    close(ev->handle);
 
-	return;
+    return;
 }
 
 /*
@@ -225,39 +223,39 @@ static void dispatch_event(const uevent_t *ev)
  */
 int main(void)
 {
-	int rc;
-	uevent_t event;
+    int rc;
+    uevent_t event;
 
-	TLOGI("Initializing\n");
+    TLOGI("Initializing\n");
 
-	rc = init_caam_env();
-	if (rc != 0) {
-		TLOGE("CAAM init env failed (%d)!\n", rc);
-		return rc;
-	}
+    rc = init_caam_env();
+    if (rc != 0) {
+        TLOGE("CAAM init env failed (%d)!\n", rc);
+        return rc;
+    }
 
-	/* initialize service providers */
-	hwrng_init_srv_provider();
-	hwkey_init_srv_provider();
+    /* initialize service providers */
+    hwrng_init_srv_provider();
+    hwkey_init_srv_provider();
 
-	TLOGI("enter main event loop\n");
+    TLOGI("enter main event loop\n");
 
-	/* enter main event loop */
-	while (true) {
-		event.handle = INVALID_IPC_HANDLE;
-		event.event  = 0;
-		event.cookie = NULL;
+    /* enter main event loop */
+    while (true) {
+        event.handle = INVALID_IPC_HANDLE;
+        event.event  = 0;
+        event.cookie = NULL;
 
-		rc = wait_any(&event, -1);
-		if (rc < 0) {
-			TLOGE("wait_any failed (%d)\n", rc);
-			break;
-		}
+        rc = wait_any(&event, -1);
+        if (rc < 0) {
+            TLOGE("wait_any failed (%d)\n", rc);
+            break;
+        }
 
-		if (rc == NO_ERROR) { /* got an event */
-			dispatch_event(&event);
-		}
-	}
+        if (rc == NO_ERROR) { /* got an event */
+            dispatch_event(&event);
+        }
+    }
 
-	return rc;
+    return rc;
 }
