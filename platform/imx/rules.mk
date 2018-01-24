@@ -73,7 +73,6 @@ endif
 MODULE_DEPS += \
 	dev/interrupt/arm_gic \
 	dev/timer/arm_generic \
-	openssl
 
 GLOBAL_DEFINES += \
 	CONFIG_CONSOLE_TTY_BASE=$(CONFIG_CONSOLE_TTY_BASE) \
