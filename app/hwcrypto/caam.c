@@ -27,8 +27,8 @@
  */
 
 #include <assert.h>
-#include <err.h>
-#include <err_ptr.h>
+#include <uapi/err.h>
+#include <lk/err_ptr.h>
 #include <malloc.h>
 #include <openssl/hkdf.h>
 #include <openssl/digest.h>

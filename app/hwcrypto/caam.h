@@ -29,8 +29,6 @@
 #ifndef _CAAM_H
 #define _CAAM_H
 
-#include <linux/types.h>
-
 #define CAAM_MMIO_ID            8
 #define CAAM_SEC_RAM_MMIO_ID    9
 #define CCM_MMIO_ID            10
