@@ -31,6 +31,9 @@ MODULE_SRCS := \
 MODULE_DEFINES := \
 	TLOG_LVL_DEFAULT=2 \
 
+MODULE_INCLUDES := \
+	$(LOCAL_DIR)/../../platform/imx/soc/$(PLATFORM_SOC)/include
+
 MODULE_DEPS := \
 	app/trusty \
 	lib/libc-trusty \
