@@ -73,7 +73,7 @@ uint32_t derive_key_v1(const uuid_t *uuid,
     *key_len = ikm_len;
     res = HWKEY_NO_ERROR;
 done:
-    return HWKEY_NO_ERROR;
+    return res;
 }
 
 /*
