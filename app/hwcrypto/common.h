@@ -18,7 +18,7 @@
 
 #include <lk/compiler.h>
 #include <sys/types.h>
-#include <trusty_std.h>
+#include <trusty_ipc.h>
 
 typedef void (*event_handler_proc_t) (const uevent_t *ev, void *ctx);
 

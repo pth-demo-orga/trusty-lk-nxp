@@ -16,11 +16,10 @@
 
 
 #include <assert.h>
-#include <uapi/err.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <trusty_std.h>
+#include <trusty_ipc.h>
+#include <uapi/err.h>
 
 #include "caam.h"
 #include "common.h"

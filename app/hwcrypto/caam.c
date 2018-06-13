@@ -27,7 +27,6 @@
  */
 
 #include <assert.h>
-#include <uapi/err.h>
 #include <lk/err_ptr.h>
 #include <malloc.h>
 #include <openssl/hkdf.h>
@@ -36,8 +35,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <trusty_std.h>
-#include <uapi/mm.h>
+#include <sys/mman.h>
+#include <uapi/err.h>
 
 #include "caam.h"
 #include <imx-regs.h>
