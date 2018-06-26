@@ -162,19 +162,19 @@ static void run_job(struct caam_job *job)
 
 int init_caam_env(void)
 {
-    caam_base = (void *)mmap(NULL, CAAM_REG_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_MMIO_ID);
+    caam_base = mmap(NULL, CAAM_REG_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_MMIO_ID);
     if (IS_ERR(caam_base)) {
         TLOGE("caam base mapping failed(%d)!\n", PTR_ERR(caam_base));
         return PTR_ERR(caam_base);
     }
 
-    sram_base = (void *)mmap(NULL, CAAM_SEC_RAM_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_SEC_RAM_MMIO_ID);
+    sram_base = mmap(NULL, CAAM_SEC_RAM_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_SEC_RAM_MMIO_ID);
     if (IS_ERR(sram_base)) {
         TLOGE("caam secure ram base mapping failed(%d)!\n", PTR_ERR(sram_base));
         return PTR_ERR(sram_base);
     }
 
-    ccm_base = (void *)mmap(NULL, CCM_REG_SIZE, MMAP_FLAG_IO_HANDLE, CCM_MMIO_ID);
+    ccm_base = mmap(NULL, CCM_REG_SIZE, MMAP_FLAG_IO_HANDLE, CCM_MMIO_ID);
     if (IS_ERR(ccm_base)) {
         TLOGE("ccm base mapping failed(%d)!\n", PTR_ERR(ccm_base));
         return PTR_ERR(ccm_base);
