@@ -27,7 +27,6 @@
  */
 
 #include <assert.h>
-#include <lk/err_ptr.h>
 #include <malloc.h>
 #include <openssl/hkdf.h>
 #include <openssl/digest.h>
@@ -162,22 +161,22 @@ static void run_job(struct caam_job *job)
 
 int init_caam_env(void)
 {
-    caam_base = mmap(NULL, CAAM_REG_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_MMIO_ID);
-    if (IS_ERR(caam_base)) {
-        TLOGE("caam base mapping failed(%d)!\n", PTR_ERR(caam_base));
-        return PTR_ERR(caam_base);
+    caam_base = mmap(NULL, CAAM_REG_SIZE, PROT_READ | PROT_WRITE, MMAP_FLAG_IO_HANDLE, CAAM_MMIO_ID, 0);
+    if (caam_base == MAP_FAILED) {
+        TLOGE("caam base mapping failed!\n");
+        return ERR_GENERIC;
     }
 
-    sram_base = mmap(NULL, CAAM_SEC_RAM_SIZE,  MMAP_FLAG_IO_HANDLE, CAAM_SEC_RAM_MMIO_ID);
-    if (IS_ERR(sram_base)) {
-        TLOGE("caam secure ram base mapping failed(%d)!\n", PTR_ERR(sram_base));
-        return PTR_ERR(sram_base);
+    sram_base = mmap(NULL, CAAM_SEC_RAM_SIZE, PROT_READ | PROT_WRITE, MMAP_FLAG_IO_HANDLE, CAAM_SEC_RAM_MMIO_ID, 0);
+    if (sram_base == MAP_FAILED) {
+        TLOGE("caam secure ram base mapping failed!\n");
+        return ERR_GENERIC;
     }
 
-    ccm_base = mmap(NULL, CCM_REG_SIZE, MMAP_FLAG_IO_HANDLE, CCM_MMIO_ID);
-    if (IS_ERR(ccm_base)) {
-        TLOGE("ccm base mapping failed(%d)!\n", PTR_ERR(ccm_base));
-        return PTR_ERR(ccm_base);
+    ccm_base = mmap(NULL, CCM_REG_SIZE, PROT_READ | PROT_WRITE, MMAP_FLAG_IO_HANDLE, CCM_MMIO_ID, 0);
+    if (ccm_base == MAP_FAILED) {
+        TLOGE("ccm base mapping failed!\n");
+        return ERR_GENERIC;
     }
 
     TLOGD("caam bases: %p, %p, %p\n", caam_base, sram_base, ccm_base);
