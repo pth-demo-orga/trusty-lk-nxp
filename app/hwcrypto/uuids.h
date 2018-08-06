@@ -17,16 +17,25 @@
 #pragma once
 
 /* This App UUID:   {1adaf827-806b-4bcf-bcec-7e7d2f5a0a5c} */
-#define IMX_HWCRYPTO_UUID \
-    { 0x1adaf827, 0x806b, 0x4bcf, \
-        { 0xbc, 0xec, 0x7e, 0x7d, 0x2f, 0x5a, 0x0a, 0x5c }}
+#define IMX_HWCRYPTO_UUID                                  \
+    {                                                      \
+        0x1adaf827, 0x806b, 0x4bcf, {                      \
+            0xbc, 0xec, 0x7e, 0x7d, 0x2f, 0x5a, 0x0a, 0x5c \
+        }                                                  \
+    }
 
 /* HWCRYPTO unittest App UUID */
-#define HWCRYPTO_UNITTEST_APP_UUID \
-    { 0xab742471, 0xd6e6, 0x4806, \
-        { 0x85, 0xf6, 0x05, 0x55, 0xb0, 0x24, 0xf4, 0xda }}
+#define HWCRYPTO_UNITTEST_APP_UUID                         \
+    {                                                      \
+        0xab742471, 0xd6e6, 0x4806, {                      \
+            0x85, 0xf6, 0x05, 0x55, 0xb0, 0x24, 0xf4, 0xda \
+        }                                                  \
+    }
 
 /* Secure Storage Server App UUID */
-#define SECURE_STORAGE_SERVER_APP_UUID \
-    {0xcea8706d, 0x6cb4, 0x49f3,\
-        { 0xb9, 0x94, 0x29, 0xe0, 0xe4, 0x78, 0xbd, 0x29 }}
+#define SECURE_STORAGE_SERVER_APP_UUID                     \
+    {                                                      \
+        0xcea8706d, 0x6cb4, 0x49f3, {                      \
+            0xb9, 0x94, 0x29, 0xe0, 0xe4, 0x78, 0xbd, 0x29 \
+        }                                                  \
+    }

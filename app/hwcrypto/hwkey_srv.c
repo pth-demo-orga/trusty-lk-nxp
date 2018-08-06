@@ -26,11 +26,11 @@
 #include <interface/hwkey/hwkey.h>
 
 #include "common.h"
-#include "uuids.h"
 #include "hwkey_srv_priv.h"
+#include "uuids.h"
 
-#define TLOG_LVL      TLOG_LVL_DEFAULT
-#define TLOG_TAG      "hwkey_srv"
+#define TLOG_LVL TLOG_LVL_DEFAULT
+#define TLOG_TAG "hwkey_srv"
 #include "tlog.h"
 
 #define HWKEY_MAX_PAYLOAD_SIZE 2048
@@ -41,23 +41,25 @@ struct hwkey_chan_ctx {
     uuid_t uuid;
 };
 
-static void hwkey_port_handler(const uevent_t *ev, void *priv);
-static void hwkey_chan_handler(const uevent_t *ev, void *priv);
+static void hwkey_port_handler(const uevent_t* ev, void* priv);
+static void hwkey_chan_handler(const uevent_t* ev, void* priv);
 
 static tipc_event_handler_t hwkey_port_evt_handler = {
-    .proc = hwkey_port_handler,
+        .proc = hwkey_port_handler,
 };
 
-/* Make sure that key_data and reg_data buffers are not crossing page boundary so it is
- * safe to pass them to DMA. An extra byte for req_data buf is used to zero terminate string
- * so it is OK to have it on separate page as it will never be accesed by DMA engine.
+/* Make sure that key_data and reg_data buffers are not crossing page boundary
+ * so it is safe to pass them to DMA. An extra byte for req_data buf is used to
+ * zero terminate string so it is OK to have it on separate page as it will
+ * never be accesed by DMA engine.
  */
-static uint8_t key_data[HWKEY_MAX_PAYLOAD_SIZE]   __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
-static uint8_t req_data[HWKEY_MAX_PAYLOAD_SIZE+1] __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
+static uint8_t key_data[HWKEY_MAX_PAYLOAD_SIZE]
+        __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
+static uint8_t req_data[HWKEY_MAX_PAYLOAD_SIZE + 1]
+        __attribute__((aligned(HWKEY_MAX_PAYLOAD_SIZE)));
 
 static uint key_slot_cnt;
-static const struct hwkey_keyslot *key_slots;
-
+static const struct hwkey_keyslot* key_slots;
 
 #if WITH_HWCRYPTO_UNITTEST
 /*
@@ -69,9 +71,10 @@ static const struct hwkey_keyslot *key_slots;
 static const uuid_t hwcrypto_unittest_uuid = HWCRYPTO_UNITTEST_APP_UUID;
 
 static uint8_t _unittest_key32[32] = "unittestkeyslotunittestkeyslotun";
-static uint32_t get_unittest_key32(const struct hwkey_keyslot *slot,
-                                   uint8_t *kbuf, size_t kbuf_len, size_t *klen)
-{
+static uint32_t get_unittest_key32(const struct hwkey_keyslot* slot,
+                                   uint8_t* kbuf,
+                                   size_t kbuf_len,
+                                   size_t* klen) {
     assert(kbuf);
     assert(klen);
     assert(kbuf_len >= sizeof(_unittest_key32));
@@ -84,19 +87,18 @@ static uint32_t get_unittest_key32(const struct hwkey_keyslot *slot,
 }
 
 static const struct hwkey_keyslot test_key_slots[] = {
-    {
-        .uuid = &hwcrypto_unittest_uuid,
-        .key_id = "com.android.trusty.hwcrypto.unittest.key32",
-        .handler = get_unittest_key32,
-    },
+        {
+                .uuid = &hwcrypto_unittest_uuid,
+                .key_id = "com.android.trusty.hwcrypto.unittest.key32",
+                .handler = get_unittest_key32,
+        },
 };
 #endif /* WITH_HWCRYPTO_UNITTEST */
 
 /*
  * Close specified hwkey context
  */
-static void hwkey_ctx_close(struct hwkey_chan_ctx *ctx)
-{
+static void hwkey_ctx_close(struct hwkey_chan_ctx* ctx) {
     close(ctx->chan);
     free(ctx);
 }
@@ -104,26 +106,26 @@ static void hwkey_ctx_close(struct hwkey_chan_ctx *ctx)
 /*
  * Send response message
  */
-static int hwkey_send_rsp(struct hwkey_chan_ctx *ctx,
-                          struct hwkey_msg *rsp_hdr,
-                          uint8_t *rsp_data, size_t rsp_data_len)
-{
+static int hwkey_send_rsp(struct hwkey_chan_ctx* ctx,
+                          struct hwkey_msg* rsp_hdr,
+                          uint8_t* rsp_data,
+                          size_t rsp_data_len) {
     rsp_hdr->cmd |= HWKEY_RESP_BIT;
-    return tipc_send_two_segments(ctx->chan,
-                                  rsp_hdr, sizeof(*rsp_hdr),
+    return tipc_send_two_segments(ctx->chan, rsp_hdr, sizeof(*rsp_hdr),
                                   rsp_data, rsp_data_len);
 }
 
-
-static uint32_t _handle_slots(struct hwkey_chan_ctx *ctx, const char *slot_id,
-                              const struct hwkey_keyslot *slots, uint slot_cnt,
-                              uint8_t *kbuf, size_t kbuf_len, size_t *klen)
-{
+static uint32_t _handle_slots(struct hwkey_chan_ctx* ctx,
+                              const char* slot_id,
+                              const struct hwkey_keyslot* slots,
+                              uint slot_cnt,
+                              uint8_t* kbuf,
+                              size_t kbuf_len,
+                              size_t* klen) {
     if (!slots)
         return HWKEY_ERR_NOT_FOUND;
 
     for (uint i = 0; i < slot_cnt; i++, slots++) {
-
         /* check key id */
         if (strcmp(slots->key_id, slot_id))
             continue;
@@ -138,26 +140,24 @@ static uint32_t _handle_slots(struct hwkey_chan_ctx *ctx, const char *slot_id,
     return HWKEY_ERR_NOT_FOUND;
 }
 
-
 /*
  * Handle get key slot command
  */
-static int hwkey_handle_get_keyslot_cmd(struct hwkey_chan_ctx *ctx,
-                                        struct hwkey_msg *hdr,
-                                        const char *slot_id)
-{
+static int hwkey_handle_get_keyslot_cmd(struct hwkey_chan_ctx* ctx,
+                                        struct hwkey_msg* hdr,
+                                        const char* slot_id) {
     int rc;
     size_t klen = 0;
 
-    hdr->status = _handle_slots(ctx, slot_id, key_slots, key_slot_cnt,
-                                key_data, sizeof(key_data), &klen);
+    hdr->status = _handle_slots(ctx, slot_id, key_slots, key_slot_cnt, key_data,
+                                sizeof(key_data), &klen);
 
 #if WITH_HWCRYPTO_UNITTEST
     if (hdr->status == HWKEY_ERR_NOT_FOUND) {
         /* also search test keys */
-        hdr->status  = _handle_slots(ctx, slot_id,
-                                     test_key_slots, countof(test_key_slots),
-                                     key_data, sizeof(key_data), &klen);
+        hdr->status = _handle_slots(ctx, slot_id, test_key_slots,
+                                    countof(test_key_slots), key_data,
+                                    sizeof(key_data), &klen);
     }
 #endif
 
@@ -172,10 +172,10 @@ static int hwkey_handle_get_keyslot_cmd(struct hwkey_chan_ctx *ctx,
 /*
  * Handle Derive key cmd
  */
-static int hwkey_handle_derive_key_cmd(struct hwkey_chan_ctx *ctx,
-                                       struct hwkey_msg *hdr,
-                                       const uint8_t *ikm_data, size_t ikm_len)
-{
+static int hwkey_handle_derive_key_cmd(struct hwkey_chan_ctx* ctx,
+                                       struct hwkey_msg* hdr,
+                                       const uint8_t* ikm_data,
+                                       size_t ikm_len) {
     int rc;
     size_t key_len = sizeof(key_data);
 
@@ -185,8 +185,8 @@ static int hwkey_handle_derive_key_cmd(struct hwkey_chan_ctx *ctx,
 
     switch (hdr->arg1) {
     case HWKEY_KDF_VERSION_1:
-        hdr->status = derive_key_v1(&ctx->uuid, ikm_data, ikm_len,
-                                    key_data, &key_len);
+        hdr->status = derive_key_v1(&ctx->uuid, ikm_data, ikm_len, key_data,
+                                    &key_len);
         break;
 
     default:
@@ -206,14 +206,13 @@ static int hwkey_handle_derive_key_cmd(struct hwkey_chan_ctx *ctx,
 /*
  *  Read and queue HWKEY request message
  */
-static int hwkey_chan_handle_msg(struct hwkey_chan_ctx *ctx)
-{
+static int hwkey_chan_handle_msg(struct hwkey_chan_ctx* ctx) {
     int rc;
     size_t req_data_len;
     struct hwkey_msg hdr;
 
-    rc = tipc_recv_two_segments(ctx->chan, &hdr, sizeof(hdr),
-                                req_data, sizeof(req_data) - 1);
+    rc = tipc_recv_two_segments(ctx->chan, &hdr, sizeof(hdr), req_data,
+                                sizeof(req_data) - 1);
     if (rc < 0) {
         TLOGE("failed (%d) to recv msg from chan %d\n", rc, ctx->chan);
         return rc;
@@ -226,7 +225,7 @@ static int hwkey_chan_handle_msg(struct hwkey_chan_ctx *ctx)
     switch (hdr.cmd) {
     case HWKEY_GET_KEYSLOT:
         req_data[req_data_len] = 0; /* force zero termination */
-        rc = hwkey_handle_get_keyslot_cmd(ctx, &hdr, (const char *)req_data);
+        rc = hwkey_handle_get_keyslot_cmd(ctx, &hdr, (const char*)req_data);
         break;
 
     case HWKEY_DERIVE:
@@ -246,9 +245,8 @@ static int hwkey_chan_handle_msg(struct hwkey_chan_ctx *ctx)
 /*
  *  HWKEY service channel event handler
  */
-static void hwkey_chan_handler(const uevent_t *ev, void *priv)
-{
-    struct hwkey_chan_ctx *ctx = priv;
+static void hwkey_chan_handler(const uevent_t* ev, void* priv) {
+    struct hwkey_chan_ctx* ctx = priv;
 
     assert(ctx);
     assert(ev->handle == ctx->chan);
@@ -265,8 +263,8 @@ static void hwkey_chan_handler(const uevent_t *ev, void *priv)
         int rc = hwkey_chan_handle_msg(ctx);
         if (rc < 0) {
             /* report an error and close channel */
-            TLOGE("failed (%d) to handle event on channel %d\n",
-                  rc, ev->handle);
+            TLOGE("failed (%d) to handle event on channel %d\n", rc,
+                  ev->handle);
             hwkey_ctx_close(ctx);
         }
     }
@@ -275,8 +273,7 @@ static void hwkey_chan_handler(const uevent_t *ev, void *priv)
 /*
  * HWKEY service port event handler
  */
-static void hwkey_port_handler(const uevent_t *ev, void *priv)
-{
+static void hwkey_port_handler(const uevent_t* ev, void* priv) {
     uuid_t peer_uuid;
 
     tipc_handle_port_errors(ev);
@@ -289,8 +286,8 @@ static void hwkey_port_handler(const uevent_t *ev, void *priv)
             return;
         }
 
-        handle_t chan = (handle_t) rc;
-        struct hwkey_chan_ctx *ctx = calloc(1, sizeof(*ctx));
+        handle_t chan = (handle_t)rc;
+        struct hwkey_chan_ctx* ctx = calloc(1, sizeof(*ctx));
         if (!ctx) {
             TLOGE("failed (%d) to allocate context on chan %d\n", rc, chan);
             close(chan);
@@ -315,8 +312,7 @@ static void hwkey_port_handler(const uevent_t *ev, void *priv)
 /*
  *  Install Key slot provider
  */
-void hwkey_install_keys(const struct hwkey_keyslot *keys, uint kcnt)
-{
+void hwkey_install_keys(const struct hwkey_keyslot* keys, uint kcnt) {
     assert(key_slots == NULL);
     assert(key_slot_cnt == 0);
     assert(keys && kcnt);
@@ -328,22 +324,22 @@ void hwkey_install_keys(const struct hwkey_keyslot *keys, uint kcnt)
 /*
  *  Initialize HWKEY service
  */
-int hwkey_start_service(void)
-{
+int hwkey_start_service(void) {
     int rc;
     handle_t port;
 
     TLOGI("Start HWKEY service\n");
 
     /* Initialize service */
-    rc = port_create(HWKEY_PORT, 1, sizeof(struct hwkey_msg) + HWKEY_MAX_PAYLOAD_SIZE,
+    rc = port_create(HWKEY_PORT, 1,
+                     sizeof(struct hwkey_msg) + HWKEY_MAX_PAYLOAD_SIZE,
                      IPC_PORT_ALLOW_TA_CONNECT);
     if (rc < 0) {
         TLOGE("Failed (%d) to create port %s\n", rc, HWKEY_PORT);
         return rc;
     }
 
-    port = (handle_t) rc;
+    port = (handle_t)rc;
     rc = set_cookie(port, &hwkey_port_evt_handler);
     if (rc) {
         TLOGE("failed (%d) to set_cookie on port %d\n", rc, port);

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,38 +22,35 @@
 
 #include "caam.h"
 #include "common.h"
-#include "hwrng_srv_priv.h"
 #include "hwkey_srv_priv.h"
+#include "hwrng_srv_priv.h"
 
-#define TLOG_LVL      TLOG_LVL_DEFAULT
-#define TLOG_TAG      "hwcrypto"
+#define TLOG_LVL TLOG_LVL_DEFAULT
+#define TLOG_TAG "hwcrypto"
 #include "tlog.h"
 
 /*
  *  Hexdump content of memory region
  */
-void _hexdump8(const void *ptr, size_t len)
-{
+void _hexdump8(const void* ptr, size_t len) {
     addr_t address = (addr_t)ptr;
     size_t count;
     size_t i;
 
-    for (count = 0 ; count < len; count += 16) {
+    for (count = 0; count < len; count += 16) {
         fprintf(stderr, "0x%08lx: ", address);
-        for (i=0; i < MIN(len - count, 16); i++) {
-            fprintf(stderr, "0x%02hhx ", *(const uint8_t *)(address + i));
+        for (i = 0; i < MIN(len - count, 16); i++) {
+            fprintf(stderr, "0x%02hhx ", *(const uint8_t*)(address + i));
         }
         fprintf(stderr, "\n");
         address += 16;
     }
 }
 
-
 /*
  * Handle common unexpected port events
  */
-void tipc_handle_port_errors(const uevent_t *ev)
-{
+void tipc_handle_port_errors(const uevent_t* ev) {
     if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
         (ev->event & IPC_HANDLE_POLL_HUP) ||
         (ev->event & IPC_HANDLE_POLL_MSG) ||
@@ -68,8 +64,7 @@ void tipc_handle_port_errors(const uevent_t *ev)
 /*
  * Handle common unexpected channel events
  */
-void tipc_handle_chan_errors(const uevent_t *ev)
-{
+void tipc_handle_chan_errors(const uevent_t* ev) {
     if ((ev->event & IPC_HANDLE_POLL_ERROR) ||
         (ev->event & IPC_HANDLE_POLL_READY)) {
         /* close it as it is in an error state */
@@ -81,11 +76,10 @@ void tipc_handle_chan_errors(const uevent_t *ev)
 /*
  *  Send single buf message
  */
-int tipc_send_single_buf(handle_t chan, const void *buf, size_t len)
-{
+int tipc_send_single_buf(handle_t chan, const void* buf, size_t len) {
     iovec_t iov = {
-            .base = (void *)buf,
-            .len  = len,
+            .base = (void*)buf,
+            .len = len,
     };
     ipc_msg_t msg = {
             .iov = &iov,
@@ -98,8 +92,7 @@ int tipc_send_single_buf(handle_t chan, const void *buf, size_t len)
 /*
  *  Receive single buf message
  */
-int tipc_recv_single_buf(handle_t chan, void *buf, size_t len)
-{
+int tipc_recv_single_buf(handle_t chan, void* buf, size_t len) {
     int rc;
     ipc_msg_info_t msg_inf;
 
@@ -113,7 +106,7 @@ int tipc_recv_single_buf(handle_t chan, void *buf, size_t len)
     } else {
         iovec_t iov = {
                 .base = buf,
-                .len  = len,
+                .len = len,
         };
         ipc_msg_t msg = {
                 .iov = &iov,
@@ -129,22 +122,24 @@ int tipc_recv_single_buf(handle_t chan, void *buf, size_t len)
 /*
  * Send message consisting of two segments (header and payload)
  */
-int tipc_send_two_segments(handle_t chan, const void *hdr, size_t hdr_len,
-                           const void *payload, size_t payload_len)
-{
+int tipc_send_two_segments(handle_t chan,
+                           const void* hdr,
+                           size_t hdr_len,
+                           const void* payload,
+                           size_t payload_len) {
     iovec_t iovs[2] = {
-        {
-            .base = (void *)hdr,
-            .len =  hdr_len,
-        },
-        {
-            .base = (void *)payload,
-            .len  = payload_len,
-        },
+            {
+                    .base = (void*)hdr,
+                    .len = hdr_len,
+            },
+            {
+                    .base = (void*)payload,
+                    .len = payload_len,
+            },
     };
     ipc_msg_t msg = {
-        .iov = iovs,
-        .num_iov = countof(iovs),
+            .iov = iovs,
+            .num_iov = countof(iovs),
     };
     return send_msg(chan, &msg);
 }
@@ -152,9 +147,11 @@ int tipc_send_two_segments(handle_t chan, const void *hdr, size_t hdr_len,
 /*
  * Receive message consisting of two segments (header and payload).
  */
-int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
-                           void *payload, size_t payload_len)
-{
+int tipc_recv_two_segments(handle_t chan,
+                           void* hdr,
+                           size_t hdr_len,
+                           void* payload,
+                           size_t payload_len) {
     int rc;
     ipc_msg_info_t msg_inf;
 
@@ -166,16 +163,14 @@ int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
         /* unexpected msg size */
         rc = ERR_BAD_LEN;
     } else {
-        iovec_t iovs[2] = {
-            {
-                .base = hdr,
-                .len =  hdr_len,
-            },
-            {
-                .base = payload,
-                .len =  payload_len,
-            }
-        };
+        iovec_t iovs[2] = {{
+                                   .base = hdr,
+                                   .len = hdr_len,
+                           },
+                           {
+                                   .base = payload,
+                                   .len = payload_len,
+                           }};
         ipc_msg_t msg = {
                 .iov = iovs,
                 .num_iov = countof(iovs),
@@ -190,8 +185,7 @@ int tipc_recv_two_segments(handle_t chan, void *hdr, size_t hdr_len,
 /*
  *  Dispatch event
  */
-static void dispatch_event(const uevent_t *ev)
-{
+static void dispatch_event(const uevent_t* ev) {
     assert(ev);
 
     if (ev->event == IPC_HANDLE_POLL_NONE) {
@@ -201,7 +195,7 @@ static void dispatch_event(const uevent_t *ev)
     }
 
     /* check if we have handler */
-    struct tipc_event_handler *handler = ev->cookie;
+    struct tipc_event_handler* handler = ev->cookie;
     if (handler && handler->proc) {
         /* invoke it */
         handler->proc(ev, handler->priv);
@@ -209,8 +203,8 @@ static void dispatch_event(const uevent_t *ev)
     }
 
     /* no handler? close it */
-    TLOGE("no handler for event (0x%x) with handle %d\n",
-           ev->event, ev->handle);
+    TLOGE("no handler for event (0x%x) with handle %d\n", ev->event,
+          ev->handle);
 
     close(ev->handle);
 
@@ -220,8 +214,7 @@ static void dispatch_event(const uevent_t *ev)
 /*
  *  Main application event loop
  */
-int main(void)
-{
+int main(void) {
     int rc;
     uevent_t event;
 
@@ -242,7 +235,7 @@ int main(void)
     /* enter main event loop */
     while (true) {
         event.handle = INVALID_IPC_HANDLE;
-        event.event  = 0;
+        event.event = 0;
         event.cookie = NULL;
 
         rc = wait_any(&event, -1);

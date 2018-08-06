@@ -29,35 +29,44 @@
 #ifndef _CAAM_H
 #define _CAAM_H
 
-#define CAAM_MMIO_ID            8
-#define CAAM_SEC_RAM_MMIO_ID    9
-#define CCM_MMIO_ID            10
+#define CAAM_MMIO_ID 8
+#define CAAM_SEC_RAM_MMIO_ID 9
+#define CCM_MMIO_ID 10
 
-#define CAAM_KB_HEADER_LEN     48
-#define CAAM_SUCCESS            0
-#define CAAM_FAILURE            1
+#define CAAM_KB_HEADER_LEN 48
+#define CAAM_SUCCESS 0
+#define CAAM_FAILURE 1
 
 int init_caam_env(void);
 
 void caam_open(void);
 
-uint32_t caam_gen_blob(const uint8_t *kmod, size_t kmod_size,
-                       const uint8_t *plain_text, uint8_t *blob, uint32_t size);
+uint32_t caam_gen_blob(const uint8_t* kmod,
+                       size_t kmod_size,
+                       const uint8_t* plain_text,
+                       uint8_t* blob,
+                       uint32_t size);
 
-uint32_t caam_decap_blob(const uint8_t *kmod, size_t kmod_size,
-                         uint8_t *plain_text, const uint8_t *blob, uint32_t size);
+uint32_t caam_decap_blob(const uint8_t* kmod,
+                         size_t kmod_size,
+                         uint8_t* plain_text,
+                         const uint8_t* blob,
+                         uint32_t size);
 
-uint32_t caam_aes_op(const uint8_t *key, size_t key_size,
-                     const uint8_t *input, uint8_t *output, size_t len, bool enc);
+uint32_t caam_aes_op(const uint8_t* key,
+                     size_t key_size,
+                     const uint8_t* input,
+                     uint8_t* output,
+                     size_t len,
+                     bool enc);
 
-uint32_t caam_hwrng(uint8_t *output_ptr, uint32_t output_len);
+uint32_t caam_hwrng(uint8_t* output_ptr, uint32_t output_len);
 
-uint32_t caam_gen_kdfv1_root_key(uint8_t *out, size_t size);
+uint32_t caam_gen_kdfv1_root_key(uint8_t* out, size_t size);
 
-void *caam_get_keybox(void);
+void* caam_get_keybox(void);
 
 /* Declare small scatter gather safe buffer (size must be power of 2) */
-#define DECLARE_SG_SAFE_BUF(nm, sz) \
-    uint8_t nm[sz] __attribute__ ((aligned (sz)))
+#define DECLARE_SG_SAFE_BUF(nm, sz) uint8_t nm[sz] __attribute__((aligned(sz)))
 
 #endif

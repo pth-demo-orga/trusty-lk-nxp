@@ -29,10 +29,9 @@
 
 extern void platform_secondary_entry(void);
 
-static void imx7d_smp_init(uint level)
-{
-	paddr_t entry_pa = vaddr_to_paddr(platform_secondary_entry);
-	writel(entry_pa, SRC_GPR3);
+static void imx7d_smp_init(uint level) {
+    paddr_t entry_pa = vaddr_to_paddr(platform_secondary_entry);
+    writel(entry_pa, SRC_GPR3);
 }
 
 LK_INIT_HOOK(imx7d_smp, imx7d_smp_init, LK_INIT_LEVEL_LAST);

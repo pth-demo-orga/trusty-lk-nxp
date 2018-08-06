@@ -18,10 +18,10 @@
 
 #include <stdio.h>
 
-#define TLOG_LVL_NONE    0
-#define TLOG_LVL_ERROR   1
-#define TLOG_LVL_INFO    2
-#define TLOG_LVL_DEBUG   3
+#define TLOG_LVL_NONE 0
+#define TLOG_LVL_ERROR 1
+#define TLOG_LVL_INFO 2
+#define TLOG_LVL_DEBUG 3
 
 #ifndef TLOG_LVL
 #define TLOG_LVL TLOG_LVL_DEFAULT
@@ -29,21 +29,21 @@
 
 #if TLOG_LVL >= TLOG_LVL_DEBUG
 #define TLOGD(fmt, ...) \
-    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__,  ## __VA_ARGS__)
+    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__, ##__VA_ARGS__)
 #else
 #define TLOGD(fmt, ...)
 #endif
 
 #if TLOG_LVL >= TLOG_LVL_INFO
 #define TLOGI(fmt, ...) \
-    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__,  ## __VA_ARGS__)
+    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__, ##__VA_ARGS__)
 #else
 #define TLOGI(fmt, ...)
 #endif
 
 #if TLOG_LVL >= TLOG_LVL_ERROR
 #define TLOGE(fmt, ...) \
-    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__,  ## __VA_ARGS__)
+    fprintf(stderr, "%s: %d: " fmt, TLOG_TAG, __LINE__, ##__VA_ARGS__)
 #else
 #define TLOGE(fmt, ...)
 #endif

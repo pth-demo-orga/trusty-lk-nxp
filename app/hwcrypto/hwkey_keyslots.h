@@ -31,12 +31,11 @@
 
 #include "caam.h"
 
-#define RPMBKEY_LEN  (32 + CAAM_KB_HEADER_LEN)
+#define RPMBKEY_LEN (32 + CAAM_KB_HEADER_LEN)
 #define PUBKEY_LEN (1032 + CAAM_KB_HEADER_LEN)
 #define KEYPACK_MAGIC "!KS"
 
-struct keyslot_package
-{
+struct keyslot_package {
     char magic[4];
     unsigned int rpmb_keyblob_len;
     unsigned char rpmb_keyblob[RPMBKEY_LEN];

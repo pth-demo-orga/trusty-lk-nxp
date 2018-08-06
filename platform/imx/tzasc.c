@@ -29,20 +29,19 @@
 #include <compiler.h>
 #include <platform/tzasc.h>
 
-void initial_tzasc(const tzasc_region_t *r, uint num)
-{
-	/*
-	 * ACTION field 0x2 means
-	 * sets tzasc_int HIGH and issues an OKAY response
-	 */
-	TZ_REG(TZ_ACTION) = 0x2;
+void initial_tzasc(const tzasc_region_t* r, uint num) {
+    /*
+     * ACTION field 0x2 means
+     * sets tzasc_int HIGH and issues an OKAY response
+     */
+    TZ_REG(TZ_ACTION) = 0x2;
 
-	//From number 0 region to config.
-	for (uint i = 0; i < num; i++, r++)  {
-		TZ_REG(TZ_GET_REGION_ADDR(i)) = r->addr_l;
-		TZ_REG(TZ_GET_REGION_ADDR(i) + 0x4) = r->addr_h;
-		TZ_REG(TZ_GET_REGION_ADDR(i) + 0x8) = r->attr;
-	}
+    // From number 0 region to config.
+    for (uint i = 0; i < num; i++, r++) {
+        TZ_REG(TZ_GET_REGION_ADDR(i)) = r->addr_l;
+        TZ_REG(TZ_GET_REGION_ADDR(i) + 0x4) = r->addr_h;
+        TZ_REG(TZ_GET_REGION_ADDR(i) + 0x8) = r->attr;
+    }
 
-	TZ_REG(TZ_INT_CLEAR) = 0;
+    TZ_REG(TZ_INT_CLEAR) = 0;
 }

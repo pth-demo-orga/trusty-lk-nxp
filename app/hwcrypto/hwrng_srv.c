@@ -27,12 +27,12 @@
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
-#define TLOG_LVL      TLOG_LVL_DEFAULT
-#define TLOG_TAG      "hwrng_srv"
+#define TLOG_LVL TLOG_LVL_DEFAULT
+#define TLOG_TAG "hwrng_srv"
 #include "tlog.h"
 
-#define HWRNG_SRV_NAME       HWRNG_PORT
-#define MAX_HWRNG_MSG_SIZE   4096
+#define HWRNG_SRV_NAME HWRNG_PORT
+#define MAX_HWRNG_MSG_SIZE 4096
 
 struct hwrng_chan_ctx {
     tipc_event_handler_t evt_handler;
@@ -42,13 +42,13 @@ struct hwrng_chan_ctx {
     bool send_blocked;
 };
 
-static void hwrng_port_handler(const uevent_t *ev, void *priv);
-static void hwrng_chan_handler(const uevent_t *ev, void *priv);
+static void hwrng_port_handler(const uevent_t* ev, void* priv);
+static void hwrng_chan_handler(const uevent_t* ev, void* priv);
 
-static handle_t hwrng_port  = INVALID_IPC_HANDLE;
+static handle_t hwrng_port = INVALID_IPC_HANDLE;
 
 static tipc_event_handler_t hwrng_port_evt_handler = {
-    .proc = hwrng_port_handler,
+        .proc = hwrng_port_handler,
 };
 
 static uint8_t rng_data[MAX_HWRNG_MSG_SIZE];
@@ -60,16 +60,15 @@ static struct list_node hwrng_req_list = LIST_INITIAL_VALUE(hwrng_req_list);
 /*
  *  Hexdump content of memory region
  */
-static void _hexdump8(const void *ptr, size_t len)
-{
+static void _hexdump8(const void* ptr, size_t len) {
     addr_t address = (addr_t)ptr;
     size_t count;
     size_t i;
 
-    for (count = 0 ; count < len; count += 16) {
+    for (count = 0; count < len; count += 16) {
         fprintf(stderr, "0x%08lx: ", address);
-        for (i=0; i < MIN(len - count, 16); i++) {
-            fprintf(stderr, "0x%02hhx ", *(const uint8_t *)(address + i));
+        for (i = 0; i < MIN(len - count, 16); i++) {
+            fprintf(stderr, "0x%02hhx ", *(const uint8_t*)(address + i));
         }
         fprintf(stderr, "\n");
         address += 16;
@@ -79,8 +78,7 @@ static void _hexdump8(const void *ptr, size_t len)
 /*
  * Close specified HWRNG service channel
  */
-static void hwrng_close_chan(struct hwrng_chan_ctx *ctx)
-{
+static void hwrng_close_chan(struct hwrng_chan_ctx* ctx) {
     close(ctx->chan);
 
     if (list_in_list(&ctx->node))
@@ -92,18 +90,16 @@ static void hwrng_close_chan(struct hwrng_chan_ctx *ctx)
 /*
  * Handle HWRNG request queue
  */
-static bool hwrng_handle_req_queue(void)
-{
-    struct hwrng_chan_ctx *ctx;
-    struct hwrng_chan_ctx *temp;
+static bool hwrng_handle_req_queue(void) {
+    struct hwrng_chan_ctx* ctx;
+    struct hwrng_chan_ctx* temp;
 
     /* service channels */
     bool need_more = false;
 
     /* for all pending requests */
-    list_for_every_entry_safe(&hwrng_req_list, ctx, temp,
-                              struct hwrng_chan_ctx, node) {
-
+    list_for_every_entry_safe(&hwrng_req_list, ctx, temp, struct hwrng_chan_ctx,
+                              node) {
         if (ctx->send_blocked)
             continue; /* cant service it rignt now */
 
@@ -145,16 +141,14 @@ static bool hwrng_handle_req_queue(void)
 /*
  * Check if we can handle request queue
  */
-static void hwrng_kick_req_queue(void)
-{
+static void hwrng_kick_req_queue(void) {
     hwrng_handle_req_queue();
 }
 
 /*
  *  Read and queue HWRNG request message
  */
-static int hwrng_chan_handle_msg(struct hwrng_chan_ctx *ctx)
-{
+static int hwrng_chan_handle_msg(struct hwrng_chan_ctx* ctx) {
     int rc;
     struct hwrng_req req;
 
@@ -183,9 +177,8 @@ static int hwrng_chan_handle_msg(struct hwrng_chan_ctx *ctx)
 /*
  *  Channel handler where HWRNG requests are coming from
  */
-static void hwrng_chan_handler(const uevent_t *ev, void *priv)
-{
-    struct hwrng_chan_ctx *ctx = priv;
+static void hwrng_chan_handler(const uevent_t* ev, void* priv) {
+    struct hwrng_chan_ctx* ctx = priv;
 
     assert(ctx);
     assert(ev->handle == ctx->chan);
@@ -214,8 +207,7 @@ static void hwrng_chan_handler(const uevent_t *ev, void *priv)
 /*
  * Port were HWRNG requests are coming from
  */
-static void hwrng_port_handler(const uevent_t *ev, void *priv)
-{
+static void hwrng_port_handler(const uevent_t* ev, void* priv) {
     uuid_t peer_uuid;
 
     tipc_handle_port_errors(ev);
@@ -229,10 +221,10 @@ static void hwrng_port_handler(const uevent_t *ev, void *priv)
             TLOGE("failed (%d) to accept on port %d\n", rc, ev->handle);
             return;
         }
-        chan = (handle_t) rc;
+        chan = (handle_t)rc;
 
         /* allocate state */
-        struct hwrng_chan_ctx *ctx = calloc(1, sizeof(*ctx));
+        struct hwrng_chan_ctx* ctx = calloc(1, sizeof(*ctx));
         if (!ctx) {
             TLOGE("failed to alloc state for chan %d\n", chan);
             close(chan);
@@ -258,8 +250,7 @@ static void hwrng_port_handler(const uevent_t *ev, void *priv)
 /*
  *  Initialize HWRNG services
  */
-int hwrng_start_service(void)
-{
+int hwrng_start_service(void) {
     int rc;
 
     TLOGI("Start HWRNG service\n");

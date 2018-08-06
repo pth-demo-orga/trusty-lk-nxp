@@ -21,22 +21,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <dev/uart.h>
 #include <kernel/thread.h>
 #include <platform/debug.h>
-#include <dev/uart.h>
 
-
-void platform_dputc(char c)
-{
-	uart_putc(0, c);
+void platform_dputc(char c) {
+    uart_putc(0, c);
 }
 
-int platform_dgetc(char *c, bool wait)
-{
-	int res = -1;
+int platform_dgetc(char* c, bool wait) {
+    int res = -1;
 
-	if (wait)
-		thread_sleep(100);
+    if (wait)
+        thread_sleep(100);
 
-	return res;
+    return res;
 }
