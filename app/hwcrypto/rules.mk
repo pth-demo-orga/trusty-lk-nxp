@@ -37,8 +37,8 @@ MODULE_INCLUDES := \
 MODULE_DEPS := \
 	app/trusty \
 	lib/libc-trusty \
-	interface/hwrng \
-	interface/hwkey \
+	trusty/user/base/interface/hwrng \
+	trusty/user/base/interface/hwkey \
 	external/boringssl \
 
 include make/module.mk
