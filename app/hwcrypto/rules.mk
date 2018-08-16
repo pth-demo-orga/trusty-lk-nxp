@@ -35,7 +35,6 @@ MODULE_INCLUDES := \
 	$(LOCAL_DIR)/../../platform/imx/soc/$(PLATFORM_SOC)/include
 
 MODULE_DEPS := \
-	app/trusty \
 	trusty/user/base/lib/libc-trusty \
 	trusty/user/base/interface/hwrng \
 	trusty/user/base/interface/hwkey \
