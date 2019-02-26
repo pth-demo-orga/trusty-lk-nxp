@@ -77,9 +77,9 @@ void tipc_handle_chan_errors(const uevent_t* ev) {
  *  Send single buf message
  */
 int tipc_send_single_buf(handle_t chan, const void* buf, size_t len) {
-    iovec_t iov = {
-            .base = (void*)buf,
-            .len = len,
+    struct iovec iov = {
+            .iov_base = (void*)buf,
+            .iov_len = len,
     };
     ipc_msg_t msg = {
             .iov = &iov,
@@ -104,9 +104,9 @@ int tipc_recv_single_buf(handle_t chan, void* buf, size_t len) {
         /* unexpected msg size */
         rc = ERR_BAD_LEN;
     } else {
-        iovec_t iov = {
-                .base = buf,
-                .len = len,
+        struct iovec iov = {
+                .iov_base = buf,
+                .iov_len = len,
         };
         ipc_msg_t msg = {
                 .iov = &iov,
@@ -127,14 +127,14 @@ int tipc_send_two_segments(handle_t chan,
                            size_t hdr_len,
                            const void* payload,
                            size_t payload_len) {
-    iovec_t iovs[2] = {
+    struct iovec iovs[2] = {
             {
-                    .base = (void*)hdr,
-                    .len = hdr_len,
+                    .iov_base = (void*)hdr,
+                    .iov_len = hdr_len,
             },
             {
-                    .base = (void*)payload,
-                    .len = payload_len,
+                    .iov_base = (void*)payload,
+                    .iov_len = payload_len,
             },
     };
     ipc_msg_t msg = {
@@ -163,14 +163,14 @@ int tipc_recv_two_segments(handle_t chan,
         /* unexpected msg size */
         rc = ERR_BAD_LEN;
     } else {
-        iovec_t iovs[2] = {{
-                                   .base = hdr,
-                                   .len = hdr_len,
-                           },
-                           {
-                                   .base = payload,
-                                   .len = payload_len,
-                           }};
+        struct iovec iovs[2] = {{
+                                        .iov_base = hdr,
+                                        .iov_len = hdr_len,
+                                },
+                                {
+                                        .iov_base = payload,
+                                        .iov_len = payload_len,
+                                }};
         ipc_msg_t msg = {
                 .iov = iovs,
                 .num_iov = countof(iovs),
