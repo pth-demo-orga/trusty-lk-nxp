@@ -27,10 +27,10 @@
  */
 
 #include <assert.h>
+#include <lk/reg.h>
 #include <malloc.h>
 #include <openssl/digest.h>
 #include <openssl/hkdf.h>
-#include <reg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

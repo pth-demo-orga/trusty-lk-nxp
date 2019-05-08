@@ -15,7 +15,9 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <lk/list.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,12 +63,12 @@ static struct list_node hwrng_req_list = LIST_INITIAL_VALUE(hwrng_req_list);
  *  Hexdump content of memory region
  */
 static void _hexdump8(const void* ptr, size_t len) {
-    addr_t address = (addr_t)ptr;
+    uintptr_t address = (uintptr_t)ptr;
     size_t count;
     size_t i;
 
     for (count = 0; count < len; count += 16) {
-        fprintf(stderr, "0x%08lx: ", address);
+        fprintf(stderr, "0x%08" PRIxPTR ": ", address);
         for (i = 0; i < MIN(len - count, 16); i++) {
             fprintf(stderr, "0x%02hhx ", *(const uint8_t*)(address + i));
         }
