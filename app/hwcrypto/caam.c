@@ -27,10 +27,12 @@
  */
 
 #include <assert.h>
+#include <lk/compiler.h>
 #include <lk/reg.h>
 #include <malloc.h>
 #include <openssl/digest.h>
 #include <openssl/hkdf.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,9 +103,9 @@ static void setup_job_rings(void) {
         abort();
     }
 
-    writel((uint32_t)pmem.paddr + __offsetof(struct caam_job_rings, in),
+    writel((uint32_t)pmem.paddr + offsetof(struct caam_job_rings, in),
            CAAM_IRBAR0);  // input ring address
-    writel((uint32_t)pmem.paddr + __offsetof(struct caam_job_rings, out),
+    writel((uint32_t)pmem.paddr + offsetof(struct caam_job_rings, out),
            CAAM_ORBAR0);  // output ring address
 
     /* Initialize job ring sizes */
