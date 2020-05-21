@@ -23,6 +23,7 @@
 #include <uapi/err.h>
 
 #include <interface/hwkey/hwkey.h>
+#include <nxp_hwcrypto_uuid_consts.h>
 #include <openssl/aes.h>
 #include <openssl/cipher.h>
 #include <openssl/digest.h>
@@ -33,7 +34,6 @@
 #include "common.h"
 #include "hwkey_keyslots.h"
 #include "hwkey_srv_priv.h"
-#include "uuids.h"
 
 #define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "hwkey_caam"

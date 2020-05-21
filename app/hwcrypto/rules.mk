@@ -19,8 +19,14 @@ LOCAL_DIR := $(GET_LOCAL_DIR)
 
 MODULE := $(LOCAL_DIR)
 
+MANIFEST := $(LOCAL_DIR)/manifest.json
+
+CONSTANTS := \
+	$(LOCAL_DIR)/../../platform/imx/soc/$(PLATFORM_SOC)/include/nxp_hwcrypto_memmap_consts.json \
+	$(LOCAL_DIR)/nxp_hwcrypto_consts.json \
+	$(LOCAL_DIR)/nxp_hwcrypto_uuid_consts.json \
+
 MODULE_SRCS := \
-	$(LOCAL_DIR)/manifest.c \
 	$(LOCAL_DIR)/main.c \
 	$(LOCAL_DIR)/hwrng_srv.c \
 	$(LOCAL_DIR)/hwkey_srv.c \
