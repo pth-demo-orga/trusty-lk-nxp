@@ -37,10 +37,10 @@ MODULE_SRCS := \
 MODULE_INCLUDES := \
 	$(LOCAL_DIR)/../../platform/imx/soc/$(PLATFORM_SOC)/include
 
-MODULE_DEPS := \
+MODULE_LIBRARY_DEPS := \
 	trusty/user/base/lib/libc-trusty \
 	trusty/user/base/interface/hwrng \
 	trusty/user/base/interface/hwkey \
 	external/boringssl \
 
-include make/module.mk
+include make/trusted_app.mk
