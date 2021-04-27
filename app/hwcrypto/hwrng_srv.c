@@ -29,9 +29,8 @@
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
-#define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "hwrng_srv"
-#include "tlog.h"
+#include <trusty_log.h>
 
 #define HWRNG_SRV_NAME HWRNG_PORT
 #define MAX_HWRNG_MSG_SIZE 4096
@@ -255,7 +254,7 @@ static void hwrng_port_handler(const uevent_t* ev, void* priv) {
 int hwrng_start_service(void) {
     int rc;
 
-    TLOGI("Start HWRNG service\n");
+    TLOGD("Start HWRNG service\n");
 
     /* create HWRNG port */
     rc = port_create(HWRNG_SRV_NAME, 1, MAX_HWRNG_MSG_SIZE,

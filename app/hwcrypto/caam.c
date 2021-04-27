@@ -43,9 +43,8 @@
 #include "caam.h"
 #include "fsl_caam_internal.h"
 
-#define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "caam_drv"
-#include "tlog.h"
+#include <trusty_log.h>
 
 struct caam_job_rings {
     uint32_t in[1];  /* single entry input ring */

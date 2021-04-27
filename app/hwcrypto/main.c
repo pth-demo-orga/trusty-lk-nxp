@@ -28,9 +28,8 @@
 #include "hwkey_srv_priv.h"
 #include "hwrng_srv_priv.h"
 
-#define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "hwcrypto"
-#include "tlog.h"
+#include <trusty_log.h>
 
 /*
  *  Hexdump content of memory region
@@ -221,7 +220,7 @@ int main(void) {
     int rc;
     uevent_t event;
 
-    TLOGI("Initializing\n");
+    TLOGD("Initializing\n");
 
     rc = init_caam_env();
     if (rc != 0) {
@@ -233,7 +232,7 @@ int main(void) {
     hwrng_init_srv_provider();
     hwkey_init_srv_provider();
 
-    TLOGI("enter main event loop\n");
+    TLOGD("enter main event loop\n");
 
     /* enter main event loop */
     while (true) {

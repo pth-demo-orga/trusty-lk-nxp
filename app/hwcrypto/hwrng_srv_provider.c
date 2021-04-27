@@ -25,9 +25,8 @@
 #include "common.h"
 #include "hwrng_srv_priv.h"
 
-#define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "hwrng_caam"
-#include "tlog.h"
+#include <trusty_log.h>
 
 void hwrng_dev_get_rng_data(uint8_t* buf, size_t buf_len) {
     uint32_t res = caam_hwrng(buf, buf_len);

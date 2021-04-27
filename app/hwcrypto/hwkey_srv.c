@@ -29,9 +29,8 @@
 #include "common.h"
 #include "hwkey_srv_priv.h"
 
-#define TLOG_LVL TLOG_LVL_DEFAULT
 #define TLOG_TAG "hwkey_srv"
-#include "tlog.h"
+#include <trusty_log.h>
 
 #define HWKEY_MAX_PAYLOAD_SIZE 2048
 
@@ -328,7 +327,7 @@ int hwkey_start_service(void) {
     int rc;
     handle_t port;
 
-    TLOGI("Start HWKEY service\n");
+    TLOGD("Start HWKEY service\n");
 
     /* Initialize service */
     rc = port_create(HWKEY_PORT, 1,

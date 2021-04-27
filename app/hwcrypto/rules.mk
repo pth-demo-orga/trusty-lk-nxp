@@ -34,9 +34,6 @@ MODULE_SRCS := \
 	$(LOCAL_DIR)/hwrng_srv_provider.c \
 	$(LOCAL_DIR)/caam.c \
 
-MODULE_DEFINES := \
-	TLOG_LVL_DEFAULT=2 \
-
 MODULE_INCLUDES := \
 	$(LOCAL_DIR)/../../platform/imx/soc/$(PLATFORM_SOC)/include
 
