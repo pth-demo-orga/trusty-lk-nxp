@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <trusty/sys/mman.h>
 #include <uapi/err.h>
 
 #include <imx-regs.h>
