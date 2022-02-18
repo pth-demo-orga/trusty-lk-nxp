@@ -30,9 +30,9 @@ jobs:
       - uses: z0al/dependent-issues@v1
         env:
           # (Required) The token to use to make API calls to GitHub.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DEP_SECRET }}
           # (Optional) The token to use to make API calls to GitHub for remote repos.
-          GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
+          GITHUB_READ_TOKEN: ${{ secrets.DEP_SECRET }}
 
         with:
           # (Optional) The label to use to mark dependent issues
@@ -40,7 +40,7 @@ jobs:
 
           # (Optional) Enable checking for dependencies in issues.
           # Enable by setting the value to "on". Default "off"
-          check_issues: off
+          check_issues: on
 
           # (Optional) Ignore dependabot PRs.
           # Enable by setting the value to "on". Default "off"
@@ -55,4 +55,6 @@ jobs:
             This PR/issue depends on:
 
             {{ dependencies }}
+
+             By **[Dependent Issues](https://github.com/z0al/dependent-issues)** (🤖). Happy coding!
 
